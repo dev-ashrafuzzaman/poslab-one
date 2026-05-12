@@ -1,0 +1,9 @@
+export const RETURN_STATUS = {
+  PARTIAL: "PARTIAL_RETURN",
+  FULL: "FULL_RETURN",
+};
+
+export const REFUND_METHOD = {
+  CASH: "CASH",
+  ADJUST_DUE: "ADJUST_DUE",
+};

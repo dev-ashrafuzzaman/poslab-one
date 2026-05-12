@@ -1,0 +1,182 @@
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Gothic&display=swap");
+@import "tailwindcss";
+@tailwind utilities;
+:root {
+  --primary: #0866ff;
+  --secondary: #2196f3;
+  --primary-gradient-1: linear-gradient(90deg, #2196f3 0%, #0866ff 100%);
+  --primary-gradient-1-hover: linear-gradient(90deg, #0866ff 0%, #2196f3 100%);
+}
+
+body {
+  margin: 0;
+  font-family: Inter, Noto Sans Gothic, sans-serif, ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ==== Base Button Style ==== */
+.btn {
+  @apply inline-flex items-center justify-center  rounded-md transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed;
+  cursor: pointer;
+}
+
+/* ==== Variants ==== */
+
+/* Primary */
+.btn-primary {
+  @apply bg-[#0866FF] text-white hover:bg-[#1877F2] focus:ring-[#2196f3];
+}
+
+.btn-secondary {
+  @apply bg-gray-100 text-gray-800 hover:bg-gray-200 
+  dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700;
+}
+
+/* Danger */
+.btn-danger {
+  @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-300;
+}
+
+/* Success */
+.btn-success {
+  @apply bg-green-600 text-white hover:bg-green-700 focus:ring-green-300;
+}
+
+/* Message */
+.btn-message {
+  @apply bg-blue-500 text-white hover:bg-blue-600 focus:ring-blue-300;
+}
+
+.btn-outlined {
+  @apply border border-gray-300 text-gray-700 hover:bg-gray-50
+  dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800;
+}
+
+.btn-ghost {
+  @apply text-gray-700 hover:bg-gray-100
+  dark:text-gray-300 dark:hover:bg-gray-800;
+}
+
+/* Gradient (from your existing style) */
+.btn-gradient {
+  @apply relative text-white font-medium overflow-hidden z-[1];
+  background: var(--primary-gradient-1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  transition: all 0.4s ease-in-out;
+}
+
+.btn-gradient::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--primary-gradient-1-hover);
+  opacity: 0;
+  z-index: -1;
+  transform: scale(1.1);
+  transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+}
+
+.btn-gradient:hover::before {
+  opacity: 1;
+  transform: scale(1);
+}
+
+a:hover {
+  color: var(--primary);
+}
+
+/* Generic Action Buttons */
+.action {
+  @apply text-sm font-medium py-1 px-3 rounded-md transition-all duration-200 border shadow-sm;
+}
+
+/* Specific action types */
+.custom {
+  @apply bg-blue-50 text-green-700 border-green-200 hover:bg-green-100 hover:border-green-300;
+}
+.status {
+  @apply bg-blue-50 text-green-700 border-green-200 hover:bg-green-100 hover:border-green-300;
+}
+.view {
+  @apply bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 hover:border-blue-300;
+}
+.edit {
+  @apply bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 hover:border-amber-300;
+}
+.delete {
+  @apply bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:border-red-300;
+}
+.print {
+  @apply bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300;
+}
+.pay {
+  @apply bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300;
+}
+
+/* Status Labels */
+.status {
+  @apply text-xs font-semibold py-1 px-2 rounded-md transition-all duration-200 text-center border shadow-sm;
+}
+.approved {
+  @apply bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:border-green-300;
+}
+.pending {
+  @apply bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100 hover:border-yellow-300;
+}
+.rejected {
+  @apply bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:border-red-300;
+}
+
+/* ===== Custom Scrollbar (Blue, Thin) ===== */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--primary);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--primary);
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-5px);
+  }
+  40%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+

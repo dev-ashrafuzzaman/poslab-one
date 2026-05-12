@@ -1,0 +1,19 @@
+export const SALE_TYPE = {
+  RETAIL: "RETAIL",
+  WHOLESALE: "WHOLESALE",
+};
+
+export const SALE_STATUS = {
+  DRAFT: "DRAFT",
+  COMPLETED: "COMPLETED",
+  CANCELLED: "CANCELLED",
+  RETURNED: "RETURNED",
+};
+
+export const PAYMENT_METHODS = {
+  CASH: "CASH",
+  CARD: "CARD",
+  BKASH: "BKASH",
+  NAGAD: "NAGAD",
+  BANK: "BANK",
+};
