@@ -76,8 +76,7 @@ export default function CategoryCreateModal({ isOpen, setIsOpen, refetch }) {
               onChange={field.onChange}
               options={[
                 { label: "Level 1", value: 1 },
-                { label: "Level 2", value: 2 },
-                { label: "Level 3", value: 3 },
+                { label: "Level 2", value: 2 }
               ]}
             />
           )}
@@ -104,7 +103,7 @@ export default function CategoryCreateModal({ isOpen, setIsOpen, refetch }) {
 
         <Input
           label="Category Name"
-          placeholder="Men's Wear"
+          placeholder="CCTV"
           error={errors.name?.message}
           {...register("name", {
             required: "Name is required",

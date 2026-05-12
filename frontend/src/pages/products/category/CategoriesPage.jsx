@@ -1,5 +1,6 @@
 import Page from "../../../components/common/Page";
 import DataTable from "../../../components/table/DataTable";
+import { categoryTableToolbar } from "../../../config/tableToolbarConfig";
 import useModalManager from "../../../hooks/useModalManager";
 import useTableManager from "../../../hooks/useTableManager";
 import CategoryCreateModal from "./CategoryCreateModal";
@@ -21,6 +22,7 @@ const CategoriesPage = () => {
       <DataTable
         table={table}
         title="Categories"
+        config={categoryTableToolbar}
         headerActions={[
           {
             variant: "gradient",
@@ -61,11 +63,11 @@ const CategoriesPage = () => {
             //   label: "Change Status",
             //   api: (row) => `/categories/${row._id}/status`,
             // },
-            // {
-            //   type: "delete",
-            //   label: "Delete",
-            //   api: (row) => `/categories/${row._id}`,
-            // },
+            {
+              type: "delete",
+              label: "Delete",
+              api: (row) => `/categories/${row._id}`,
+            },
           ]
         }
       />

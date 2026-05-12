@@ -23,11 +23,22 @@ const BalanceSheetReport = React.lazy(
 const CategoriesPage = React.lazy(
   () => import("./pages/products/category/CategoriesPage"),
 );
+const UnitPage = React.lazy(
+  () => import("./pages/products/unit/UnitPage"),
+);
+const BrandPage = React.lazy(
+  () => import("./pages/products/brand/BrandPage"),
+);
+const WarrantyPage = React.lazy(
+  () => import("./pages/products/warranty/WarrantyPage"),
+);
 const ProductsPage = React.lazy(() => import("./pages/products/ProductsPage"));
 
 const VariantsPage = React.lazy(
   () => import("./pages/products/variant/VariantPage"),
 );
+
+
 const PurchaseCreatePage = React.lazy(
   () => import("./pages/purchase/PurchaseCreatePage"),
 );
@@ -47,7 +58,7 @@ const PurchaseReturnPage = React.lazy(
   () => import("./pages/purchase/PurchasesReturnPage"),
 );
 
-// Partise Route
+// Parties Route
 const CustomerPage = React.lazy(
   () => import("./pages/parties/customer/CustomerPage"),
 );
@@ -276,9 +287,15 @@ export default function App() {
           <Route path="/settings/logs" element={<ActivityPage />} />
           <Route path="/hr/attendance" element={<AttendancePage />} />
           <Route path="/branches" element={<BranchesPage />} />
+
+          <Route path="/units" element={<UnitPage />} />
+          <Route path="/brands" element={<BrandPage />} />
+          <Route path="/warranties" element={<WarrantyPage />} />
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/variants" element={<VariantsPage />} />
+
+
           <Route path="/purchases" element={<PurchasesPage />} />
           <Route path="/purchases/create" element={<PurchaseCreatePage />} />
           <Route

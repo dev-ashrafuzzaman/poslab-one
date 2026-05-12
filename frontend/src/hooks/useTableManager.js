@@ -8,7 +8,7 @@ import { useAuth } from "../context/useAuth";
 export default function useTableManager(route, options = {}) {
   const {
     queryKey,
-    initialQuery = { page: 1, limit: 10 },
+    initialQuery = { page: 1, limit: 30 },
     transform,
     staleTime = 30_000,
     onError,

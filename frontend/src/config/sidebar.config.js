@@ -77,6 +77,15 @@ export const SIDEBAR_MENU = [
     header: "Product & Inventory",
     roles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER],
     items: [
+       {
+        title: "Products",
+        roles: [ROLES.SUPER_ADMIN, ROLES.ADMIN],
+        icon: Package,
+        submenu: [
+          { title: "Manage Products", to: "/products" },
+          { title: "Manage Variants", to: "/variants" },
+        ],
+      },
       {
         title: "Categories",
         roles: [ROLES.SUPER_ADMIN, ROLES.ADMIN],
@@ -84,12 +93,13 @@ export const SIDEBAR_MENU = [
         to: "/categories",
       },
       {
-        title: "Products",
+        title: "Utils",
         roles: [ROLES.SUPER_ADMIN, ROLES.ADMIN],
         icon: Package,
         submenu: [
-          { title: "Manage Products", to: "/products" },
-          { title: "Manage Variants", to: "/variants" },
+          { title: "Manage Unit", to: "/units" },
+          { title: "Manage Brand", to: "/brands" },
+          { title: "Manage Warranties", to: "/Warranties" },
         ],
       },
       {

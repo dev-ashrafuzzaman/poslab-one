@@ -422,3 +422,30 @@ export const usersTableToolbar = {
     reset: { enabled: true },
   },
 };
+export const categoryTableToolbar = {
+  search: {
+    enabled: true,
+    placeholder: "Search records...",
+  },
+
+  filters: [
+        {
+      type: "select",
+      label: "Status",
+      queryKey: "status",
+      placeholder: "All Status",
+      options: [
+        { label: "Active", value: "active" },
+        { label: "Inactive", value: "inactive" },
+      ],
+    },
+    {
+      label: "Level",
+      queryKey: "level",
+      options: [
+        { label: "1", value: "1" },
+        { label: "2", value: "2" },
+      ],
+    },
+  ],
+};
