@@ -1,6 +1,7 @@
 export const COLLECTIONS = {
   USERS: "users",
   PARTIES: "parties",
+  UTILS: "utils",
   COUNTERS: "counters",
   BRANCHES: "branches",
   CATEGORIES: "categories",

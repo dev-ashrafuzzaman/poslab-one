@@ -9,8 +9,12 @@ import partyRoutes from "./src/modules/parties/party.routes.js";
 
 
 import categoryRoutes from "./src/modules/categories/category.routes.js";
+import utilsRoutes from "./src/modules/utils/utils.routes.js";
 import productRoutes from "./src/modules/products/product.routes.js";
 import variantRoutes from "./src/modules/variants/variant.routes.js";
+
+
+
 import purchaseRoutes from "./src/modules/purchases/purchase.routes.js";
 import attendanceRoutes from "./src/modules/hr/attendance/attendance.routes.js";
 import saleRoutes from "./src/modules/sales/sales.routes.js";
@@ -59,6 +63,7 @@ router.use("/payroll", payrollRoutes);
 router.use("/discounts", discountRoutes);
 router.use("/activities", adminRoutes);
 
+router.use("/utils", utilsRoutes);
 router.use("/categories", categoryRoutes);
 router.use("/products", productRoutes);
 router.use("/variants", variantRoutes);

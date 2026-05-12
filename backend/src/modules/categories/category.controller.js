@@ -14,19 +14,18 @@ export const getCategories = () => {
       const sortField = req.query.sortBy || "createdAt";
       const sortOrder = req.query.sort === "asc" ? 1 : -1;
 
-const filter = {};
+      const filter = {};
 
-if (req.query.status) filter.status = req.query.status;
-if (req.query.level) filter.level = Number(req.query.level);
+      if (req.query.status) filter.status = req.query.status;
+      if (req.query.level) filter.level = Number(req.query.level);
 
-if (req.query.parentId) {
-  filter.parentId = new ObjectId(req.query.parentId);
-}
+      if (req.query.parentId) {
+        filter.parentId = new ObjectId(req.query.parentId);
+      }
 
-if (req.query.search) {
-  filter.name = { $regex: req.query.search, $options: "i" };
-}
-
+      if (req.query.search) {
+        filter.name = { $regex: req.query.search, $options: "i" };
+      }
 
       const pipeline = [
         { $match: filter },
@@ -63,10 +62,7 @@ if (req.query.search) {
         .aggregate(pipeline, { allowDiskUse: true })
         .toArray();
 
-const total = await db
-  .collection("categories")
-  .countDocuments(filter);
-
+      const total = await db.collection("categories").countDocuments(filter);
 
       res.json({
         success: true,
