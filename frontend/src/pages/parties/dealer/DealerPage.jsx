@@ -2,9 +2,9 @@ import PartyPage
 from "../PartyPage";
 
 import config
-from "../configs/employee.config";
+from "../configs/dealer.config";
 
-export default function EmployeePage() {
+export default function DealerPage() {
   return (
     <PartyPage
       config={config}

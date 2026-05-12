@@ -20,10 +20,10 @@ export default function Table({
 
   if (!data.length) {
     return (
-      <div className="bg-white rounded-xl border shadow-sm">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
         <EmptyState
-          title="No vendors found"
-          description="Your search did not match any vendors. Please try again or create a new vendor."
+          title="No data found"
+          description="Your search did not match any data. Please try again or create a new data."
           onClear={() => table?.resetQuery?.()}
         />
       </div>

@@ -46,6 +46,8 @@ const PurchaseReturnCreatePage = React.lazy(
 const PurchaseReturnPage = React.lazy(
   () => import("./pages/purchase/PurchasesReturnPage"),
 );
+
+// Partise Route
 const CustomerPage = React.lazy(
   () => import("./pages/parties/customer/CustomerPage"),
 );
@@ -54,6 +56,22 @@ const SupplierPage = React.lazy(
 );
 const EmployeePage = React.lazy(
   () => import("./pages/parties/employee/EmployeePage"),
+);
+const WholesalerPage = React.lazy(
+  () => import("./pages/parties/Wholesaler/WholesalerPage"),
+);
+const DealerPage = React.lazy(
+  () => import("./pages/parties/dealer/DealerPage"),
+);
+const OtherPage = React.lazy(() => import("./pages/parties/other/OtherPage"));
+const MembershipsPage = React.lazy(
+  () => import("./pages/parties/membership/MembershipPage"),
+);
+const LoyaltySettingPage = React.lazy(
+  () => import("./pages/setting/loyalty/LoyaltySettingPage"),
+);
+const MembershipOverviewPage = React.lazy(
+  () => import("./pages/parties/membership/MembershipOverviewPage"),
 );
 
 const StockPage = React.lazy(() => import("./pages/inventory/StockPage"));
@@ -99,15 +117,7 @@ const DiscountCreatePage = React.lazy(
 const DiscountsPage = React.lazy(
   () => import("./pages/inventory/discount/DiscountsPage"),
 );
-const MembershipsPage = React.lazy(
-  () => import("./pages/parties/membership/MembershipPage"),
-);
-const LoyaltySettingPage = React.lazy(
-  () => import("./pages/setting/loyalty/LoyaltySettingPage"),
-);
-const MembershipOverviewPage = React.lazy(
-  () => import("./pages/parties/membership/MembershipOverviewPage"),
-);
+
 const ReceiveStockTransferPage = React.lazy(
   () => import("./pages/inventory/stock/ReceiveStockTransferPage"),
 );
@@ -176,6 +186,19 @@ export default function App() {
         <Route element={<ProtectedLayout />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />{" "}
           <Route path="/dashboard" element={<Dashboard />} />
+          {/* Parties Route */}
+          <Route path="/parties/customers" element={<CustomerPage />} />
+          <Route path="/parties/wholesalers" element={<WholesalerPage />} />
+          <Route path="/parties/dealers" element={<DealerPage />} />
+          <Route path="/parties/others" element={<OtherPage />} />
+          <Route path="/parties/suppliers" element={<SupplierPage />} />
+          <Route path="/parties/employees" element={<EmployeePage />} />
+          <Route path="/parties/memberships" element={<MembershipsPage />} />
+          <Route
+            path="/parties/memberships/:customerId"
+            element={<MembershipOverviewPage />}
+          />
+          {/* Parties Route */}
           <Route path="/settings/company-info" element={<CompanyPage />} />
           <Route path="/reports/expenses" element={<ExpenseReportPage />} />
           <Route
@@ -212,15 +235,10 @@ export default function App() {
             element={<StockAuditsScanPage />}
           />
           <Route
-            path="/memberships/:customerId"
-            element={<MembershipOverviewPage />}
-          />
-          <Route
             path="/inventory/receive-transfer/:id"
             element={<ReceiveStockTransferPage />}
           />
           <Route path="/settings/loyalty" element={<LoyaltySettingPage />} />
-          <Route path="/memberships" element={<MembershipsPage />} />
           <Route path="/inventory/discounts" element={<DiscountsPage />} />
           <Route
             path="/inventory/discount-create"
@@ -276,9 +294,6 @@ export default function App() {
             path="/purchase-returns/:id/invoice"
             element={<PurchasesReturnInvoicePage />}
           />
-          <Route path="/customers" element={<CustomerPage />} />
-          <Route path="/suppliers" element={<SupplierPage />} />
-          <Route path="/employees" element={<EmployeePage />} />
           <Route path="/inventory/stock" element={<StockPage />} />
           {/* company */}
           <Route path="/reports/trial-balance" element={<TrialBalance />} />

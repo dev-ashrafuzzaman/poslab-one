@@ -5,7 +5,7 @@ const Page = ({ title, children, className = "" }) => {
   useEffect(() => {
     if (title) document.title = `${title} | ${Config.app.name}`;
   }, [title]);
-
+ 
   return (
     <div className={`min-h-screen  ${className}`}>
       {children}

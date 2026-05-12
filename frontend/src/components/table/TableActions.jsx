@@ -41,10 +41,6 @@ export default function TableActions({ row, actions = [], onSuccess }) {
       return;
     }
 
-    if (action.type === "edit") {
-      navigate(`${row._id}/edit`);
-      return;
-    }
 
     // 🔥 UNIVERSAL HANDLER (pay, custom, anything)
     if (typeof action.onClick === "function") {

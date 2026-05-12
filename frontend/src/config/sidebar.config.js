@@ -44,18 +44,18 @@ export const SIDEBAR_MENU = [
   ===================================================== */
   {
     header: "Sales Management",
-    roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.CASHIER],
+    roles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER, ROLES.CASHIER],
     items: [
       {
         title: "Point of Sale",
         icon: ShoppingCart,
         to: "/pos",
-        roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.CASHIER],
+        roles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER, ROLES.CASHIER],
       },
       {
         title: "Sales Transactions",
         icon: FileText,
-        roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.CASHIER],
+        roles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER, ROLES.CASHIER],
         submenu: [
           {
             title: "Manage Sales",
@@ -165,24 +165,21 @@ export const SIDEBAR_MENU = [
      CUSTOMERS & PARTIES
   ===================================================== */
   {
-    header: "Customers & Parties",
+    header: "Parties & Customers",
     roles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER, ROLES.CASHIER],
     items: [
       {
-        title: "Customers",
-        icon: Users,
-        to: "/customers",
-      },
-      {
-        title: "Memberships",
-        icon: Users,
-        to: "/memberships",
-      },
-      {
-        title: "Employees",
+        title: "Parties",
         icon: UserCheck,
-        roles: [ROLES.SUPER_ADMIN, ROLES.ADMIN],
-        to: "/employees",
+        submenu: [
+          { title: "Customers", to: "/parties/customers" },
+          { title: "Memberships", to: "/parties/memberships" },
+          { title: "Wholesalers", to: "/parties//wholesalers" },
+          { title: "Dealers", to: "/parties/dealers" },
+          { title: "Suppliers", to: "/parties/suppliers" },
+          { title: "Employees", to: "/parties/Employees" },
+          { title: "Others", to: "/parties/others" },
+        ],
       },
     ],
   },
@@ -196,13 +193,13 @@ export const SIDEBAR_MENU = [
     items: [
       {
         title: "Expenses",
-        roles: [ROLES.MANAGER],
+        roles: [ROLES.ADMIN, ROLES.MANAGER],
         icon: Calculator,
         to: "/accounting/expenses",
       },
       {
         title: "Cash Transfer",
-        roles: [ROLES.MANAGER],
+        roles: [ROLES.ADMIN, ROLES.MANAGER],
         icon: ArrowRightLeft,
         to: "/accounting/cash-transfer",
       },
@@ -219,12 +216,28 @@ export const SIDEBAR_MENU = [
           { title: "Transactions", to: "/accounting/transactions" },
           { title: "Stock Report", to: "/reports/stocks" },
           { title: "Expense Report", to: "/reports/expenses" },
-          { title: "Sales Report",  to: "/reports/sales" },
-          { title: "Trial Balance",  roles: [ROLES.ADMIN, ROLES.SUPER_ADMIN], to: "/reports/trial-balance" },
-          { title: "Profit & Loss",  roles: [ROLES.ADMIN, ROLES.SUPER_ADMIN], to: "/reports/profit-loss" },
-          { title: "Balance Sheet",  roles: [ROLES.ADMIN, ROLES.SUPER_ADMIN], to: "/reports/balance-sheet" },
+          { title: "Sales Report", to: "/reports/sales" },
+          {
+            title: "Trial Balance",
+            roles: [ROLES.ADMIN, ROLES.SUPER_ADMIN],
+            to: "/reports/trial-balance",
+          },
+          {
+            title: "Profit & Loss",
+            roles: [ROLES.ADMIN, ROLES.SUPER_ADMIN],
+            to: "/reports/profit-loss",
+          },
+          {
+            title: "Balance Sheet",
+            roles: [ROLES.ADMIN, ROLES.SUPER_ADMIN],
+            to: "/reports/balance-sheet",
+          },
           // { title: "Cash Flow",  roles: [ROLES.ADMIN, ROLES.SUPER_ADMIN], to: "/reports/cash-flow" },
-          { title: "Party Statement",  roles: [ROLES.ADMIN, ROLES.SUPER_ADMIN], to: "/reports/statements" },
+          {
+            title: "Party Statement",
+            roles: [ROLES.ADMIN, ROLES.SUPER_ADMIN],
+            to: "/reports/statements",
+          },
         ],
       },
     ],
@@ -235,7 +248,7 @@ export const SIDEBAR_MENU = [
   ===================================================== */
   {
     header: "Human Resources",
-    roles: [ROLES.MANAGER],
+    roles: [ROLES.ADMIN, ROLES.MANAGER],
     items: [
       {
         title: "Attendance",
@@ -262,13 +275,13 @@ export const SIDEBAR_MENU = [
     items: [
       {
         title: "Branch Management",
-        roles: [ROLES.SUPER_ADMIN],
+        roles: [ROLES.SUPER_ADMIN, ROLES.ADMIN],
         icon: GitBranch,
         to: "/branches",
       },
       {
         title: "Opening Balance",
-        roles: [ROLES.SUPER_ADMIN],
+        roles: [ROLES.SUPER_ADMIN, ROLES.ADMIN],
         icon: DollarSignIcon,
         to: "/settings/opening-balance",
       },
