@@ -1,13 +1,21 @@
-import React from "react";
-import { LAYOUTS, ACTIVE_DASHBOARD_LAYOUT } from "./Layouts";
+import MainLayout from "./MainLayout";
+import BlankLayout from "./BlankLayout";
 
-export default function LayoutWrapper({ children, layout = "main" }) {
-  // If layout type is "dashboard", use the globally active dashboard layout
-  const selectedLayout =
-    layout.startsWith("dashboard")
-      ? LAYOUTS[ACTIVE_DASHBOARD_LAYOUT]
-      : LAYOUTS[layout];
+export const LAYOUTS = {
+  main: MainLayout,
+  blank: BlankLayout,
+};
 
-  const LayoutComponent = selectedLayout || LAYOUTS.main;
-  return <LayoutComponent>{children}</LayoutComponent>;
+export default function LayoutWrapper({
+  children,
+  layout = "main",
+}) {
+  const LayoutComponent =
+    LAYOUTS[layout] || MainLayout;
+
+  return (
+    <LayoutComponent>
+      {children}
+    </LayoutComponent>
+  );
 }

@@ -127,7 +127,7 @@ console.log("posInvoiceData:", data)
       <p className="center small">Return accepted within 7 days with invoice</p>
       <p className="center small">
         Thank you for shopping with us <br />
-        Software by Softnext IT MO 01728664312
+        Software by Codivoo Technologies MO 01711347754
       </p>
     </div>
   );

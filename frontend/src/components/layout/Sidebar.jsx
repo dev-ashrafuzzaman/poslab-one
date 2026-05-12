@@ -10,7 +10,7 @@ import {
 import { SIDEBAR_MENU } from "../../config/sidebar.config";
 import SidebarItem from "./SidebarItem";
 import { NavLink } from "react-router-dom";
-import  logo from "../../assets/logo transparent.png"
+import logo from "../../assets/logo.jpeg";
 export default function Sidebar({ isDrawerOpen, closeDrawer, user }) {
   const [openMenu, setOpenMenu] = useState(null);
   const sidebarRef = useRef(null);
@@ -33,30 +33,29 @@ export default function Sidebar({ isDrawerOpen, closeDrawer, user }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isDrawerOpen, closeDrawer]);
 
-
   const filterMenuByRole = (menu, roleName) =>
-  menu
-    .filter(section => !section.roles || section.roles.includes(roleName))
-    .map(section => ({
-      ...section,
-      items: section.items
-        .filter(item => !item.roles || item.roles.includes(roleName))
-        .map(item => ({
-          ...item,
-          submenu: item.submenu
-            ? item.submenu.filter(
-                sub => !sub.roles || sub.roles.includes(roleName)
-              )
-            : undefined,
-        }))
-        .filter(item => !item.submenu || item.submenu.length > 0),
-    }))
-    .filter(section => section.items.length > 0);
+    menu
+      .filter((section) => !section.roles || section.roles.includes(roleName))
+      .map((section) => ({
+        ...section,
+        items: section.items
+          .filter((item) => !item.roles || item.roles.includes(roleName))
+          .map((item) => ({
+            ...item,
+            submenu: item.submenu
+              ? item.submenu.filter(
+                  (sub) => !sub.roles || sub.roles.includes(roleName),
+                )
+              : undefined,
+          }))
+          .filter((item) => !item.submenu || item.submenu.length > 0),
+      }))
+      .filter((section) => section.items.length > 0);
 
-const filteredMenu = useMemo(
-  () => filterMenuByRole(SIDEBAR_MENU, roleName),
-  [roleName]
-);
+  const filteredMenu = useMemo(
+    () => filterMenuByRole(SIDEBAR_MENU, roleName),
+    [roleName],
+  );
   return (
     <>
       {isDrawerOpen && (
@@ -73,13 +72,15 @@ const filteredMenu = useMemo(
         transform transition-all duration-300 ease-in-out
         ${
           isDrawerOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-        }`}>
+        }`}
+      >
         {/* Header */}
         <div className="flex items-center gap-3 p-4">
           <div
             className={`
             p-2 rounded-xl
-          `}>
+          `}
+          >
             <Sparkles className="w-6 h-6 text-blue-500" />
             {/* <img src={logo}  alt="" /> */}
           </div>
@@ -92,12 +93,12 @@ const filteredMenu = useMemo(
         </div>
 
         <div className="px-4 py-2">
-       <NavLink >
-           <div className="flex items-center justify-center border border-blue-100 bg-blue-50 text-blue-600 cursor-pointer rounded-md py-2 text-sm font-medium">
-            <ShoppingBag className="w-4 h-4 mr-2" />
-            CREATE POS SALES
-          </div>
-       </NavLink>
+          <NavLink>
+            <div className="flex items-center justify-center border border-blue-100 bg-blue-50 text-blue-600 cursor-pointer rounded-md py-2 text-sm font-medium">
+              <ShoppingBag className="w-4 h-4 mr-2" />
+              CREATE POS SALES
+            </div>
+          </NavLink>
         </div>
 
         <div className="flex-1 overflow-y-auto px-1 custom-scroll">
@@ -131,15 +132,16 @@ const filteredMenu = useMemo(
             <a
               target="_blank"
               rel="noopener noreferrer"
-              href={`https://wa.me/${"+8801728664312".replace(
+              href={`https://wa.me/${"+8801711347754".replace(
                 /\D/g,
                 "",
-              )}?text=${encodeURIComponent(`Hello Richwear Support 👋  
-I'm contacting from the Richwear Inventory Pro software (sidebar → Contact Support).  
+              )}?text=${encodeURIComponent(`Hello Pos Lab Support 👋  
+I'm contacting from the Pos Lab Inventory Pro software (sidebar → Contact Support).  
 I need some help regarding the Report section. Could you please assist me with this?`)}`}
               title="Send WhatsApp Message"
               className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700
-                text-white text-xs px-3 py-1.5 rounded-md">
+                text-white text-xs px-3 py-1.5 rounded-md"
+            >
               <MessageCircle className="w-4 h-4" />
               Report
             </a>
@@ -158,26 +160,29 @@ I need some help regarding the Report section. Could you please assist me with t
             <a
               target="_blank"
               rel="noopener noreferrer"
-              href={`https://wa.me/${"+8801728664312".replace(
+              href={`https://wa.me/${"+8801711347754".replace(
                 /\D/g,
                 "",
-              )}?text=${encodeURIComponent(`Hello Richwear Support 👋  
-I'm contacting from the *Richwear Inventory Pro* software (sidebar → Contact Support).  
+              )}?text=${encodeURIComponent(`Hello Pos Lab Support 👋  
+I'm contacting from the *Pos Lab Inventory Pro* software (sidebar → Contact Support).  
 I need some assistance regarding my account setup. Could you please help me?`)}`}
               className="bg-[#00B2FF]/10 text-[#00B2FF] p-2 rounded-full"
-              title="Send WhatsApp Message">
+              title="Send WhatsApp Message"
+            >
               <MessageCircle className="w-4 h-4" />
             </a>
             <a
-              href="tel:+8801728664312"
+              href="tel:+8801711347754"
               className="bg-green-100 text-green-600 p-2 rounded-full"
-              title="Call Now">
+              title="Call Now"
+            >
               <PhoneCall className="w-4 h-4" />
             </a>
             <a
               target="_blank"
-              href="https://www.linkedin.com/company/richwear/"
-              className="bg-blue-100 text-blue-600 p-2 rounded-full">
+              href="https://www.linkedin.com/company/Pos Lab/"
+              className="bg-blue-100 text-blue-600 p-2 rounded-full"
+            >
               <Linkedin className="w-4 h-4" />
             </a>
           </div>

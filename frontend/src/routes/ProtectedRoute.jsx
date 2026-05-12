@@ -1,16 +1,13 @@
-import { Navigate } from "react-router-dom";
-import { useAuth } from "../context/useAuth";
-import { getAccessToken } from "../utils/token";
+import { Outlet } from "react-router-dom";
 
-export default function ProtectedRoute({ children }) {
-  const { user, initializing } = useAuth();
-  const token = getAccessToken();
-
-  if (initializing) return null;
-
-  if (!token || !user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return children;
+import PrivateRoute from "../routes/PrivateRoute";
+import LayoutWrapper from "../layouts/LayoutWrapper";
+export default function ProtectedLayout() {
+  return (
+    <PrivateRoute>
+      <LayoutWrapper layout="main">
+        <Outlet />
+      </LayoutWrapper>
+    </PrivateRoute>
+  );
 }
