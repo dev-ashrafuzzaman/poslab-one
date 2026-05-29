@@ -81,14 +81,14 @@ export default function Sidebar({ isDrawerOpen, closeDrawer, user }) {
             p-2 rounded-xl
           `}
           >
-            <Sparkles className="w-6 h-6 text-blue-500" />
+            <Sparkles className="w-4 h-4 text-blue-500" />
             {/* <img src={logo}  alt="" /> */}
           </div>
           <div>
             <p className="font-bold text-lg bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              POS LAB PRO
+              POSLAB ONE
             </p>
-            <p className="text-xs opacity-60">Business Management</p>
+            <p className="text-xs opacity-60">Business Operations Simplified.</p>
           </div>
         </div>
 

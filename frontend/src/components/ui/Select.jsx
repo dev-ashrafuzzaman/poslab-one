@@ -35,7 +35,7 @@ export default function Select({
         <div className="relative">
           {/* ================= BUTTON ================= */}
           <Listbox.Button
-            className={`relative w-full cursor-default border border-gray-300 bg-white text-left focus:outline-none focus:ring-1 focus:ring-[var(--secondary)] transition-all duration-150 disabled:bg-gray-100 disabled:cursor-not-allowed ${sizeMap[size]}`}
+            className={`relative w-full cursor-default border border-gray-300 bg-white text-left focus:outline-none focus:ring-1 focus:ring-(--secondary) transition-all duration-150 disabled:bg-gray-100 disabled:cursor-not-allowed ${sizeMap[size]}`}
           >
             <span
               className={`block truncate ${
@@ -68,7 +68,7 @@ export default function Select({
                     placeholder="Search..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full border border-gray-200 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--secondary)]"
+                    className="w-full border border-gray-200 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-(--secondary)"
                   />
                 </div>
               )}
@@ -86,7 +86,7 @@ export default function Select({
                     className={({ active }) =>
                       `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
                         active
-                          ? "bg-blue-100 text-[var(--primary)]"
+                          ? "bg-blue-100 text-(--primary)"
                           : "text-gray-900"
                       }`
                     }
@@ -102,7 +102,7 @@ export default function Select({
                         </span>
 
                         {selected && (
-                          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[var(--primary)]">
+                          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-(--primary)">
                             <Check size={16} />
                           </span>
                         )}

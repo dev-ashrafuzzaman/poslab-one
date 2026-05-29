@@ -14,7 +14,7 @@ const InputErrorMsg = ({ when, children }) => {
           transition={{ duration: 0.2 }}
           className="flex items-start gap-1 mt-1 text-xs font-medium text-red-500"
         >
-          <AlertCircle size={14} className="mt-[2px]" />
+          <AlertCircle size={14} className="mt-0.5" />
           <span>{children}</span>
         </motion.div>
       )}

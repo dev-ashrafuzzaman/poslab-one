@@ -1,22 +1,16 @@
-/* ========================================================================== */
-/*                                BrandSelect.jsx                             */
-/* ========================================================================== */
-
 import { useMemo } from "react";
 import { Building2, Plus } from "lucide-react";
-
 import useModalManager from "../../hooks/useModalManager";
-
 import ReportSmartSelect from "../common/ReportSmartSelect";
 
 export default function BrandSelect({
   value,
   onChange,
   error,
-
   label = "Brand",
   placeholder = "Search brand",
-
+  title = "",
+  showLabel = true,
   allowCreate = false,
   createModalKey = "addBrand",
   createModal = null,
@@ -26,7 +20,6 @@ export default function BrandSelect({
   /* ---------------- Selected Option ---------------- */
   const selectedOption = useMemo(() => {
     if (!value) return null;
-
     return value;
   }, [value]);
 
@@ -38,36 +31,36 @@ export default function BrandSelect({
         modals[createModalKey]?.isOpen &&
         createModal({
           isOpen: modals[createModalKey].isOpen,
-
           setIsOpen: () => closeModal(createModalKey),
-
           onSuccess: (newBrand) => {
             onChange(newBrand);
-
             closeModal(createModalKey);
           },
         })}
 
-      <div className="w-full">
-        {/* ---------------- Header ---------------- */}
-        <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-gray-700">
-            {label}
-          </label>
+      <div className="w-full" title={title}>
+        {/* ---------------- Header (Conditional Layout) ---------------- */}
+        {showLabel && (
+          <div className="flex items-center justify-between mb-1.5 select-none">
+            <label className="block text-sm font-medium text-gray-700">
+              {label}
+            </label>
 
-          {allowCreate && (
-            <button
-              type="button"
-              onClick={() => openModal(createModalKey)}
-              className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
-              <Plus className="w-4 h-4" />
-              Add
-            </button>
-          )}
-        </div>
+            {allowCreate && (
+              <button
+                type="button"
+                onClick={() => openModal(createModalKey)}
+                className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Add
+              </button>
+            )}
+          </div>
+        )}
 
         {/* ---------------- Select ---------------- */}
-        <div className="relative">
+        <div className="relative w-full">
           {/* Left Icon */}
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
             <Building2 className="w-4 h-4 text-gray-400" />
@@ -80,20 +73,11 @@ export default function BrandSelect({
             displayField={["name"]}
             valueField="_id"
             placeholder={placeholder}
-            className="
-              [&>div:first-child]:pl-10
-              [&>div:first-child]:rounded-xl
-              [&>div:first-child]:border-gray-300
-              [&>div:first-child]:min-h-11.5
-            "
+            className="w-full"
           />
 
           {/* ---------------- Error ---------------- */}
-          {error && (
-            <p className="mt-1 text-xs text-red-500">
-              {error}
-            </p>
-          )}
+          {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
         </div>
       </div>
     </>

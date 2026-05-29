@@ -4,19 +4,19 @@ const Checkbox = ({ label, className = "", labelClassName = "", ...props }) => {
   return (
     <label
       className={clsx(
-        "inline-flex items-center gap-2 cursor-pointer select-none",
+        "inline-flex items-center justify-center gap-2 cursor-pointer select-none leading-none", 
         className
       )}
     >
       <input
         type="checkbox"
-        className="size-4 rounded border-gray-300 text-[var(--primary)] focus:ring-[var(--primary)] dark:border-[var(--primary)] dark:bg-[var(--primary)]"
+        className="size-4 shrink-0 rounded border-gray-300 text-(--primary) focus:ring-(--primary)"
         {...props}
       />
       {label && (
         <span
           className={clsx(
-            "text-sm text-gray-700 dark:text-gray-300 transition-colors",
+            "text-sm text-gray-700 dark:text-gray-300 transition-colors leading-none",
             labelClassName
           )}
         >

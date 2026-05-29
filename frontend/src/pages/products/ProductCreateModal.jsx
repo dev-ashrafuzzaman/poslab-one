@@ -1,5 +1,5 @@
-import { useFieldArray, useForm, Controller, useWatch } from "react-hook-form";
-import { useEffect } from "react";
+import { useForm, Controller, useWatch, useFieldArray } from "react-hook-form";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -7,9 +7,10 @@ import {
   Layers3,
   Plus,
   Trash2,
-  ShieldCheck,
   Boxes,
-  ScanLine
+  ScanLine,
+  FileText,
+  Sparkles,
 } from "lucide-react";
 
 import Modal from "../../components/modals/Modal";
@@ -23,9 +24,11 @@ import CategorySelect from "../../components/select/CategorySelect";
 import BrandSelect from "../../components/select/BrandSelect";
 import UnitSelect from "../../components/select/UnitSelect";
 import ProductTypeSelect from "../../components/select/ProductTypeSelect";
+import WarrantySelect from "../../components/select/WarrantySelect";
 
 export default function ProductCreateModal({ isOpen, setIsOpen, refetch }) {
   const { request, loading } = useApi();
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   const {
     register,
@@ -33,7 +36,7 @@ export default function ProductCreateModal({ isOpen, setIsOpen, refetch }) {
     handleSubmit,
     reset,
     setValue,
-    getValues,
+    getValues, 
     formState: { errors },
   } = useForm({
     defaultValues: {
@@ -43,116 +46,109 @@ export default function ProductCreateModal({ isOpen, setIsOpen, refetch }) {
       subCategory: null,
       barcode: "",
       rackNo: "",
-      model: "",             
+      model: "",
       brand: null,
       unit: null,
       description: "",
+      defaultWarranty: null,
       confirm: false,
-      variantSchema: [
-        { name: "Capacity", values: ["500GB", "1TB"] }, // ডিফল্ট এক্সাম্পল ইউজারকে গাইড করার জন্য
-        { name: "Warranty", values: ["No Warranty", "1 Year"] } // ওয়ারেন্টি এখন নিজেই অ্যাক্সিস!
-      ],       
-      variants: [],            
+      variants: [],
     },
   });
 
-  // Watchers
-  const watchedSchema = useWatch({ control, name: "variantSchema" }) || [];
-  const productType = useWatch({ control, name: "productType" });
-  const category = useWatch({ control, name: "category" });
-  const subCategory = useWatch({ control, name: "subCategory" });
-  const brand = useWatch({ control, name: "brand" });
-  const masterModel = useWatch({ control, name: "model" });
-  const unit = useWatch({ control, name: "unit" });
-  const confirmed = useWatch({ control, name: "confirm" });
-
-  // Axis Array (Capacity, Warranty, etc.)
-  const { fields: schemaFields, append: appendSchema, remove: removeSchema } = useFieldArray({
-    control,
-    name: "variantSchema",
-  });
-
-  // SKU Matrix Array
-  const { fields: variantFields, replace: replaceVariants, remove: removeVariantRow } = useFieldArray({
+  const {
+    fields: variantFields,
+    append: appendVariant,
+    remove: removeVariant,
+  } = useFieldArray({
     control,
     name: "variants",
   });
 
-  // Cartesian Product Engine
-  const generateVariantCombinations = (schemas) => {
-    if (!schemas || schemas.length === 0) return [];
-    const filtered = schemas.filter(s => s.name?.trim() && s.values?.filter(v => v.trim()).length > 0);
-    if (filtered.length === 0) return [];
+  const productName = useWatch({ control, name: "name" });
+  const productType = useWatch({ control, name: "productType" });
+  const category = useWatch({ control, name: "category" });
+  const subCategory = useWatch({ control, name: "subCategory" });
+  const brand = useWatch({ control, name: "brand" });
+  const unit = useWatch({ control, name: "unit" });
+  const confirmed = useWatch({ control, name: "confirm" });
+  const defaultWarranty = useWatch({ control, name: "defaultWarranty" });
+  const globalModel = useWatch({ control, name: "model" });
+  const masterBarcode = useWatch({ control, name: "barcode" });
+  const watchedVariants = useWatch({ control, name: "variants" });
 
-    const result = [];
-    const recurse = (index, currentAttr) => {
-      if (index === filtered.length) {
-        result.push({
-          attributes: currentAttr,
-          model: masterModel || "",      
-          barcode: "",
-          salePrice: 0,
+  const variantCount = useMemo(() => {
+    return watchedVariants?.length || 0;
+  }, [watchedVariants]);
+
+  const handleAiNameOptimize = async () => {
+    const currentName = getValues("name")?.trim();
+    if (!currentName) {
+      toast.error("Please type an initial product name first.");
+      return;
+    }
+
+    setIsAiLoading(true);
+    try {
+      const res = await request(
+        "/products/ai-generate-name",
+        "POST",
+        { name: currentName },
+        { useToast: false }
+      );
+
+      const finalName = res?.optimizedName || res?.data?.optimizedName;
+
+      if (finalName) {
+        setValue("name", finalName, { 
+          shouldValidate: true,
+          shouldDirty: true 
         });
-        return;
+        toast.success("Product name optimized via AI Engine!");
+      } else {
+        toast.error("AI couldn't optimize this string. Format invalid.");
       }
-      const currentSchema = filtered[index];
-      const validValues = currentSchema.values.filter(v => v.trim());
-      for (const val of validValues) {
-        recurse(index + 1, { ...currentAttr, [currentSchema.name.trim()]: val.trim() });
-      }
-    };
-    recurse(0, {});
-    return result;
+    } catch (err) {
+      console.error("AI generation failed:", err);
+      toast.error("AI Server error. Please type manually.");
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
-  // Re-calculate Matrix when Schema Changes
-  useEffect(() => {
-    const combinations = generateVariantCombinations(watchedSchema);
-    replaceVariants(combinations);
-  }, [JSON.stringify(watchedSchema)]);
-
-  // Master Model Live Sync
-  useEffect(() => {
-    const currentVariants = getValues("variants") || [];
-    if (currentVariants.length > 0) {
-      const updated = currentVariants.map(v => ({ ...v, model: v.model || masterModel }));
-      replaceVariants(updated);
-    }
-  }, [masterModel]);
-
-const onSubmit = async (data) => {
+  const onSubmit = async (data) => {
     if (!productType?._id || !category?._id || !brand?._id || !unit?._id) {
       toast.error("Please fill up all required master selections.");
       return;
     }
 
+    const processedVariants = data.variants
+      .map((v) => ({
+        attributeName: v.attributeName?.trim() || "",
+        attributeValue: v.attributeValue?.trim() || "",
+        model: v.model?.trim() || data.model?.trim() || null,
+        barcode: v.barcode?.trim() || data.barcode?.trim() || null,
+        warrantyId: v.warranty?._id || data.defaultWarranty?._id || null,
+      }))
+      .filter((v) => v.attributeName && v.attributeValue);
+
     const payload = {
       name: data.name.trim(),
       productTypeId: productType._id,
       categoryId: category._id,
-      subCategoryId: subCategory?._id || null, //  এখানে টাইপো ফিক্স করা হয়েছে
+      subCategoryId: subCategory?._id || null,
       brandId: brand._id,
       unitId: unit._id,
       barcode: data.barcode?.trim() || null,
       rackNo: data.rackNo?.trim() || null,
       model: data.model?.trim() || null,
       description: data.description?.trim() || null,
-      variantSchema: (data.variantSchema || [])
-        .filter((s) => s.name?.trim())
-        .map((s) => ({
-          name: s.name.trim(),
-          values: s.values.filter((v) => v?.trim()).map((v) => v.trim()),
-        })),
-      variants: data.variants.map((v) => ({
-        attributes: v.attributes, 
-        model: v.model?.trim() || data.model?.trim() || null,             
-        barcode: v.barcode?.trim() || null,
-        salePrice: Number(v.salePrice) || 0          
-      })),
+      warrantyId: defaultWarranty?._id || null,
+      variants: processedVariants.length > 0 ? processedVariants : [],
     };
-
+console.log(payload)
     await request("/products", "POST", payload, {
-      successMessage: "Product Matrix built successfully!",
+      successMessage: "Product Created successfully!",
       onSuccess: () => {
         reset();
         setIsOpen(false);
@@ -160,6 +156,7 @@ const onSubmit = async (data) => {
       },
     });
   };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -169,15 +166,18 @@ const onSubmit = async (data) => {
       size="7xl"
       footer={
         <div className="flex items-center justify-between border-t border-gray-100 pt-5 w-full">
-          <div className="text-sm text-gray-500 font-medium">
-            Active Generated SKUs: <strong className="text-gray-800">{variantFields.length || 1} SKUs</strong>
+          <div className="text-sm font-semibold text-gray-600">
+            Total Variants Matrix:{" "}
+            <span className="text-blue-600">{variantCount}</span>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setIsOpen(false)}>
+              Cancel
+            </Button>
             <Button
-              disabled={!confirmed || loading}
+              disabled={!confirmed}
               onClick={handleSubmit(onSubmit)}
-              prefix={loading && <Loader2 className="w-4 h-4 animate-spin" />}
+              prefix={<Loader2 className="w-4 h-4 animate-spin" />}
             >
               Generate Product Engine
             </Button>
@@ -186,138 +186,267 @@ const onSubmit = async (data) => {
       }
     >
       <div className="space-y-6 max-h-[72vh] overflow-y-auto pr-2">
-        
-        {/* PROFILE */}
+        {/* SECTION 1: IDENTITY */}
         <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-2xs space-y-4">
           <div className="flex items-center gap-2 border-b border-gray-50 pb-3">
             <Package2 className="w-5 h-5 text-blue-600" />
             <h2 className="text-md font-bold text-gray-800">Product Identity</h2>
           </div>
-          <Input
-            label="Product Global Display Name"
-            placeholder="e.g. Seagate Surveillance Internal Hard Disk"
-            {...register("name", { required: "Product identity name is required" })}
-            error={errors.name?.message}
-          />
+          
+          <div className="relative w-full">
+            <Input
+              label="Product Global Display Name"
+              placeholder="e.g. seagate surveillance internal hard disk 2tb"
+              value={productName || ""} 
+              {...register("name", {
+                required: "Product identity name is required",
+              })}
+              error={errors.name?.message}
+            />
+
+            <button
+              type="button"
+              disabled={isAiLoading}
+              onClick={handleAiNameOptimize}
+              className="absolute right-0 top-0 flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition-all"
+              title="Click to polish and optimize via ERP AI Engine"
+            >
+              {isAiLoading ? (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin text-indigo-600" />
+                  <span>Optimizing...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3 h-3 text-indigo-500 fill-indigo-400" />
+                  <span>AI Optimize</span>
+                </>
+              )}
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <ProductTypeSelect value={productType} onChange={(val) => setValue("productType", val)} />
-            <CategorySelect label="Parent Category" level={1} value={category} onChange={(val) => { setValue("category", val); setValue("subCategory", null); }} />
-            <CategorySelect label="Sub Category" level={2} parentId={category?._id} value={subCategory} onChange={(val) => setValue("subCategory", val)} />
+            <ProductTypeSelect
+              value={productType}
+              onChange={(val) => setValue("productType", val)}
+            />
+            <CategorySelect
+              label="Parent Category"
+              level={1}
+              value={category}
+              onChange={(val) => {
+                setValue("category", val);
+                setValue("subCategory", null);
+              }}
+            />
+            <CategorySelect
+              label="Sub Category"
+              level={2}
+              parentId={category?._id}
+              value={subCategory}
+              onChange={(val) => setValue("subCategory", val)}
+            />
           </div>
         </div>
 
-        {/* LOGISTICS */}
+        {/* SECTION 2: MASTER DEFAULTS */}
         <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-2xs space-y-4">
           <div className="flex items-center gap-2 border-b border-gray-50 pb-3">
             <Layers3 className="w-5 h-5 text-emerald-600" />
-            <h2 className="text-md font-bold text-gray-800">Master Defaults</h2>
+            <h2 className="text-md font-bold text-gray-800">
+              Master Defaults / Fallbacks
+            </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <div className="relative">
-              <Input label="Master Box Barcode" placeholder="Scan hardware barcode" {...register("barcode")} />
-              <ScanLine className="absolute right-3 top-10 w-4 h-4 text-gray-400" />
-            </div>
-            <Input label="Warehouse Rack Location" placeholder="e.g. A-01-R2" {...register("rackNo")} />
-            <Input label="Default / Base Model Name" placeholder="e.g. SkyHawk Series" {...register("model")} />
-            <BrandSelect value={brand} onChange={(val) => setValue("brand", val)} />
-            <UnitSelect value={unit} onChange={(val) => setValue("unit", val)} />
+            <Input
+              label="Master Box Barcode (Optional)"
+              placeholder="Scan hardware barcode"
+              suffix={<ScanLine className="w-4 h-4 text-gray-400" />}
+              {...register("barcode")}
+            />
+            <Input
+              label="Warehouse Rack Location"
+              placeholder="e.g. A-01-R2"
+              {...register("rackNo")}
+            />
+            <Input
+              label="Default / Base Model Name"
+              placeholder="e.g. SkyHawk Series"
+              {...register("model")}
+            />
+            <BrandSelect
+              value={brand}
+              onChange={(val) => setValue("brand", val)}
+            />
+            <UnitSelect
+              value={unit}
+              onChange={(val) => setValue("unit", val)}
+            />
+            <WarrantySelect
+              value={defaultWarranty}
+              onChange={(val) => setValue("defaultWarranty", val)}
+            />
           </div>
         </div>
 
-        {/* DYNAMIC VARIATION GENERATOR */}
+        {/* SECTION 3: DYNAMIC DUAL-AXIS VARIANT MATRIX */}
         <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-2xs space-y-4">
           <div className="flex items-center justify-between border-b border-gray-50 pb-3">
             <div className="flex items-center gap-2">
-              <Boxes className="w-5 h-5 text-orange-600" />
+              <Boxes className="w-5 h-5 text-indigo-600" />
               <div>
-                <h2 className="text-md font-bold text-gray-800">Multi-Axis Variations Matrix Configuration</h2>
-                <p className="text-xs text-gray-400">Add Capacity, Warranty, Channels etc. as distinct axes</p>
+                <h2 className="text-md font-bold text-gray-800">
+                  Dynamic Product Variants
+                </h2>
+                <p className="text-xs text-gray-400">
+                  Leave empty if product has no attributes/variants
+                </p>
               </div>
             </div>
-            <Button type="button" variant="outlined" size="sm" prefix={<Plus className="w-4 h-4" />} onClick={() => appendSchema({ name: "", values: [""] })}>
-              Add Matrix Axis
-            </Button>
+            <button
+              type="button"
+              onClick={() =>
+                appendVariant({
+                  attributeName: "",
+                  attributeValue: "",
+                  model: "",
+                  barcode: "", 
+                  warranty: null,
+                })
+              }
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors rounded-xl text-xs font-semibold"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add Attribute Specification
+            </button>
           </div>
 
-          <div className="space-y-4">
-            {schemaFields.map((schema, sIdx) => (
-              <div key={schema.id} className="p-4 bg-gray-50/50 rounded-xl border border-gray-200 flex gap-4 items-start">
-                <div className="w-1/4">
-                  <Input placeholder="Axis Name (e.g. Warranty)" {...register(`variantSchema.${sIdx}.name`)} />
-                </div>
-                <div className="flex-1 space-y-2">
-                  <div className="flex flex-wrap gap-2">
-                    {watchedSchema[sIdx]?.values?.map((_, vIdx) => (
-                      <div key={vIdx} className="flex items-center gap-1 bg-white p-1 rounded-lg border border-gray-200 shadow-3xs">
-                        <input className="text-xs px-2 py-1 focus:outline-none w-24" placeholder="Value" {...register(`variantSchema.${sIdx}.values.${vIdx}`)} />
-                        <button type="button" className="text-red-500 font-bold px-1 hover:bg-red-50 rounded" onClick={() => { const current = getValues(`variantSchema.${sIdx}.values`); if (current.length > 1) setValue(`variantSchema.${sIdx}.values`, current.filter((_, i) => i !== vIdx)); }}>×</button>
-                      </div>
-                    ))}
-                    <button type="button" className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100" onClick={() => { const current = getValues(`variantSchema.${sIdx}.values`) || []; setValue(`variantSchema.${sIdx}.values`, [...current, ""]); }}>+ Option</button>
-                  </div>
-                </div>
-                <button type="button" className="text-red-500 p-2 hover:bg-red-50 rounded-xl" onClick={() => removeSchema(sIdx)}>
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* SKU GENERATION MATRIX GRID */}
-        {variantFields.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-2xs space-y-4 overflow-x-auto">
-            <div>
-              <h3 className="text-sm font-bold text-gray-700">Calculated Dynamic SKU Manifest</h3>
-              <p className="text-xs text-gray-400">Review generated variants. You can remove combinations that do not exist in real stock.</p>
-            </div>
-            <table className="w-full text-left text-sm table-fixed min-w-[800px]">
-              <thead>
-                <tr className="border-b border-gray-200 bg-gray-50 text-gray-600 font-semibold">
-                  <th className="p-3 w-1/3">Combinations Path</th>
-                  <th className="p-3 w-1/4">Specific Factory Model No</th>
-                  <th className="p-3 w-32">Retail Price</th>
-                  <th className="p-3 w-40">Item Barcode</th>
-                  <th className="p-3 w-16 text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {variantFields.map((field, index) => {
-                  const specLabel = Object.entries(field.attributes || {}).map(([k, v]) => `${k}: ${v}`).join(" / ");
-                  return (
-                    <tr key={field.id} className="border-b border-gray-100 hover:bg-gray-50/30">
-                      <td className="p-3 font-semibold text-gray-700 truncate">{specLabel}</td>
-                      <td className="p-2">
-                        <Input placeholder={`Fallback: ${masterModel || "None"}`} {...register(`variants.${index}.model`)} />
+          {variantFields.length > 0 && (
+            <div className="border border-gray-100 rounded-xl bg-white p-1" style={{ overflow: "visible" }}>
+              <table className="w-full table-fixed text-left border-collapse" style={{ overflow: "visible" }}>
+                <thead>
+                  <tr className="bg-gray-50/70 border-b border-gray-100 text-xs font-bold text-gray-600">
+                    <th className="p-3 w-[16%]">Attribute Axis</th>
+                    <th className="p-3 w-[14%]">Value</th>
+                    <th className="p-3 w-[20%]">Specific Model</th>
+                    <th className="p-3 w-[22%]">Box Barcode No</th> 
+                    <th className="p-3 w-[22%]">Specific Warranty</th>
+                    <th className="p-3 w-[6%] text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50 text-sm" style={{ overflow: "visible" }}>
+                  {variantFields.map((field, index) => (
+                    <tr key={field.id} className="hover:bg-gray-50/30 transition-colors" style={{ overflow: "visible" }}>
+                      <td className="p-2 align-middle">
+                        <Input
+                          showLabel={false}
+                          title="Enter Attribute Name (e.g. Capacity)"
+                          placeholder="e.g. Capacity"
+                          className="w-full"
+                          inputClassName="h-5 text-xs"
+                          {...register(`variants.${index}.attributeName`, { required: true })}
+                        />
                       </td>
-                      <td className="p-2">
-                        <Input type="number" placeholder="0.00" {...register(`variants.${index}.salePrice`)} />
+                      <td className="p-2 align-middle">
+                        <Input
+                          showLabel={false}
+                          title="Enter Value (e.g. 2TB)"
+                          placeholder="e.g. 2TB"
+                          className="w-full"
+                          inputClassName="h-5 text-xs"
+                          {...register(`variants.${index}.attributeValue`, { required: true })}
+                        />
                       </td>
-                      <td className="p-2">
-                        <Input placeholder="Custom Barcode Scan" {...register(`variants.${index}.barcode`)} />
+                      <td className="p-2 align-middle">
+                        <Input
+                          showLabel={false}
+                          title="Enter Specific Model Name"
+                          placeholder={globalModel || "e.g. ST2000VX008"}
+                          className="w-full"
+                          inputClassName="h-5 text-xs"
+                          {...register(`variants.${index}.model`)}
+                        />
                       </td>
-                      <td className="p-2 text-center">
-                        <button type="button" onClick={() => removeVariantRow(index)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors">
-                          <Trash2 className="w-4 h-4 mx-auto" />
+                      <td className="p-2 align-middle">
+                        <Input
+                          showLabel={false}
+                          title="Scan specific variation Box Barcode"
+                          placeholder={masterBarcode || "Scan item barcode"}
+                          suffix={<ScanLine className="w-3.5 h-3.5 text-gray-400" />}
+                          className="w-full"
+                          inputClassName="h-5 text-xs"
+                          {...register(`variants.${index}.barcode`)}
+                        />
+                      </td>
+                      <td className="p-2 align-middle relative" style={{ zIndex: variantFields.length + 10 - index, overflow: "visible" }}>
+                        <div className="w-full relative">
+                          <Controller
+                            name={`variants.${index}.warranty`}
+                            control={control}
+                            render={({ field: controllerField }) => (
+                              <WarrantySelect
+                                value={controllerField.value}
+                                onChange={controllerField.onChange}
+                                showLabel={false}
+                                placeholder={defaultWarranty ? `${defaultWarranty.name} (Inherited)` : "Select Warranty"}
+                              />
+                            )}
+                          />
+                        </div>
+                      </td>
+                      <td className="p-2 text-center align-middle">
+                        <button
+                          type="button"
+                          onClick={() => removeVariant(index)}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-xl inline-flex items-center justify-center"
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* LOGISTICS BLOCK CONFIRMATION */}
-        <div className="rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50/40 to-indigo-50/40 p-6 flex items-start gap-4">
-          <Controller name="confirm" control={control} render={({ field }) => <Checkbox checked={field.value} onChange={field.onChange} />} />
-          <div className="flex-1">
-            <h3 className="font-bold text-gray-800">Lock Structural Data Mapping</h3>
-            <p className="text-xs text-gray-500 mt-0.5">Financial accounting valuation initialized via moving averages seamlessly based on these combinations.</p>
-          </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
+        {/* SECTION 4: PRODUCT SPECIFICATION DESCRIPTION */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-2xs space-y-4">
+          <div className="flex items-center gap-2 border-b border-gray-50 pb-3">
+            <FileText className="w-5 h-5 text-amber-500" />
+            <h2 className="text-md font-bold text-gray-800">
+              Technical Specifications / Description (Optional)
+            </h2>
+          </div>
+          <Textarea
+            label="Product Description"
+            placeholder="Enter full device specifications, pinouts, IC details or sales notes..."
+            rows={3}
+            {...register("description")}
+          />
+        </div>
+
+        {/* DOUBLE CHECK & CONFIRMATION BLOCK */}
+        <div className="rounded-2xl border border-blue-100 bg-linear-to-r from-blue-50/40 to-indigo-50/40 p-6 flex items-center gap-4">
+          <div className="flex items-center justify-center shrink-0">
+            <Controller
+              name="confirm"
+              control={control}
+              render={({ field }) => (
+                <Checkbox checked={field.value} onChange={field.onChange} />
+              )}
+            />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-bold text-gray-800 text-sm md:text-base leading-tight select-none">
+              Are you sure all informations is correct double check and confirm
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5 leading-normal select-none">
+              Financial moving average valuation framework and unique barcode
+              structures will map onto the database engine instantly.
+            </p>
+          </div>
+        </div>
       </div>
     </Modal>
   );

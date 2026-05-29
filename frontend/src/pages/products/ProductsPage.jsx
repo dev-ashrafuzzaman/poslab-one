@@ -28,8 +28,9 @@ const ProductsPage = () => {
           },
         ]}
         columns={[
-          { key: "productCode", label: "productCode" },
+          { key: "productCode", label: "Code" },
           { key: "name", label: "Name" },
+          { key: "productTypeName", label: "Type" },
           { key: "unit", label: "Unit" },
           {
             key: "category",
@@ -50,15 +51,16 @@ const ProductsPage = () => {
               <span
                 className={`status ${
                   r.status === "active" ? "approved" : "rejected"
-                }`}>
+                }`}
+              >
                 {r.status === "active" ? "Active" : "Inactive"}
               </span>
             ),
           },
-          // { key: "createdAt", label: "Created At" },
+          { key: "createdAt", label: "Created At" },
         ]}
         actions={[
-          // { type: "edit", label: "Edit" },
+          { type: "edit", label: "Edit" },
           {
             type: "status",
             label: "Change Status",

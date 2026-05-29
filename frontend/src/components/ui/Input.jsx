@@ -8,18 +8,21 @@ const Input = forwardRef(
       type = "text",
       placeholder,
       prefix,
+      suffix,               
       error,
-      className = "",        // Wrapper div class
-      labelClassName = "",   // Label text class
-      inputClassName = "",   // Input field class
-      ...props               // Must include value, onChange, name (from Controller)
+      title = "",           
+      showLabel = true,     
+      className = "",        
+      labelClassName = "",   
+      inputClassName = "",  
+      ...props              
     },
     ref
   ) => {
     return (
-      <div className={clsx("w-full", className)}>
+      <div className={clsx("w-full", className)} title={title}>
         {/* Label */}
-        {label && (
+        {label && showLabel && (
           <label
             htmlFor={props.name}
             className={clsx(
@@ -31,19 +34,20 @@ const Input = forwardRef(
           </label>
         )}
 
-        {/* Input wrapper */}
+
         <div
           className={clsx(
-            "flex items-center rounded-lg border px-3 py-2 transition-all duration-150 focus-within:ring-2",
+            "flex items-center h-10 rounded-lg border px-3 transition-all duration-150 focus-within:ring-2",
             error
               ? "border-red-500 focus-within:ring-red-300"
-              : "border-gray-300 dark:border-dark-400 focus-within:border-primary-500 focus-within:ring-[var(--secondary)] dark:focus-within:ring-[var(--secondary)]",
+              : "border-gray-300 dark:border-dark-400 focus-within:border-primary-500 focus-within:ring-(--secondary) dark:focus-within:ring-(--secondary)",
             "bg-white dark:bg-dark-800"
           )}
         >
-          {/* Prefix Icon */}
           {prefix && (
-            <div className="mr-2 flex-shrink-0 text-gray-400">{prefix}</div>
+            <div className="mr-2.5 shrink-0 text-gray-400 flex items-center justify-center">
+              {prefix}
+            </div>
           )}
 
           {/* Input field */}
@@ -52,15 +56,21 @@ const Input = forwardRef(
             id={props.name}
             type={type}
             placeholder={placeholder}
-            {...props} // ✅ Keeps React Hook Form value/onChange intact
+            {...props}
             className={clsx(
-              "w-full bg-transparent outline-none text-gray-800 dark:text-gray-100 placeholder-gray-400 text-sm",
+              "w-full bg-transparent outline-none text-gray-800 dark:text-gray-100 placeholder-gray-400 text-sm h-full leading-none",
               inputClassName
             )}
           />
+
+          {suffix && (
+            <div className="ml-2 shrink-0 text-gray-400 flex items-center justify-center">
+              {suffix}
+            </div>
+          )}
         </div>
 
-        {/* Error Message */}
+
         {error && (
           <p className="mt-1 text-xs text-red-500 font-medium">{error}</p>
         )}

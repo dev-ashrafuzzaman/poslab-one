@@ -10,7 +10,7 @@ const Divider = ({ label, className = "", color = "gray" }) => {
   return (
     <div className={clsx("relative w-full flex items-center justify-center my-8", className)}>
       {/* line */}
-      <div className={clsx("h-[1px] w-full bg-gradient-to-r", colorMap[color])}></div>
+      <div className={clsx("h-px w-full bg-linear-to-r", colorMap[color])}></div>
 
       {/* label */}
       {label && (
