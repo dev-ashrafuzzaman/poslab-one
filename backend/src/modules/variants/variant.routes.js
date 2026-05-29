@@ -41,12 +41,16 @@ router.get(
     filterableFields: ["status", "type"]
   })
 );
-
-
 router.get(
   "/",
-  getVariants
+  getAll({
+    collection: COLLECTIONS.VARIANTS,
+    searchableFields: ["title", "sku", "barcode", "model", "productCode"],
+    filterableFields: ["status"]
+  })
 );
+
+
 
 
 router.get(

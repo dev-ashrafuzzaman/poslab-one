@@ -12,22 +12,25 @@ import {
 
 import {
   createProductSchema,
-  updateProductSchema
+  updateProductSchema,
 } from "./product.validation.js";
 
 import { authenticate } from "../../middlewares/auth.middleware.js";
 import { COLLECTIONS } from "../../database/collections.js";
-import { createProduct, getProducts, getProductsForPurchase } from "./product.controller.js";
+import {
+  aiGenerateName,
+  createProduct,
+  getProducts,
+  getProductsForPurchase,
+} from "./product.controller.js";
 
 const router = Router();
 const COLLECTION = COLLECTIONS.PRODUCTS;
 
 router.use(authenticate);
 
-router.post(
-  "/",
-createProduct
-);
+router.post("/", createProduct);
+router.post("/ai-generate-name", aiGenerateName);
 
 // router.get(
 //   "/",

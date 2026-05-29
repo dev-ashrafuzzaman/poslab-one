@@ -25,10 +25,10 @@ export async function runIndexes(db) {
   await branchesIndexes(db);
   await categoriesIndexes(db);
   await productsIndexes(db);
-  await variantsIndexes(db);
+  // await variantsIndexes(db);
   await attributesIndexes(db);
   await stocksIndexes(db);
-  await purchasesIndexes(db);
+  await purchasesIndexes(db); 
   await salesIndexes(db);
   await customersIndexes(db);
   await usersIndexes(db);

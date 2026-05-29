@@ -1,6 +1,4 @@
 export const seedProductTypes = async (db) => {
-
-
   await db.collection("product_types").deleteMany({ isSystem: true });
 
   const types = [
@@ -49,7 +47,7 @@ export const seedProductTypes = async (db) => {
 
   const docs = types.map((t) => ({
     name: t.name,
-    code: t.code, 
+    code: t.code,
     slug: t.slug,
     status: t.status,
     isSystem: true,

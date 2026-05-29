@@ -1,42 +1,34 @@
 import Joi from "joi";
 
+const objectIdPattern = /^[0-9a-fA-F]{24}$/;
+
 export const createProductSchema = Joi.object({
-  name: Joi.string().trim().min(3).max(150).required(),
-
-  productTypeId: Joi.string().trim().required(),
-
-  categoryId: Joi.string().trim().required(),
-
-  subCategoryId: Joi.string().trim().required(),
-
-  brandId: Joi.string().trim().required(),
-
-  unitId: Joi.string().trim().required(),
+  name: Joi.string().trim().min(2).max(200).required(),
+  productTypeId: Joi.string().regex(objectIdPattern).required(),
+  categoryId: Joi.string().regex(objectIdPattern).required(),
+  subCategoryId: Joi.string().regex(objectIdPattern).allow(null, ""),
+  brandId: Joi.string().regex(objectIdPattern).required(),
+  unitId: Joi.string().regex(objectIdPattern).required(),
 
   barcode: Joi.string().trim().max(100).allow(null, ""),
-
-  model: Joi.string().trim().max(100).required(),
-
-  rackNo: Joi.string().trim().max(50).allow(null, ""),
-
+  model: Joi.string().trim().max(100).allow(null, ""),
+  rackNo: Joi.string().trim().max(100).allow(null, ""),
   description: Joi.string().trim().allow(null, ""),
-
+  warrantyId: Joi.string().regex(objectIdPattern).allow(null, ""),
   status: Joi.string().valid("active", "inactive").default("active"),
 
+  // 💡 🚀 সুনির্দিষ্ট ফিক্সড কলাম আর্কিটেকচার (জেআই আর ডুপ্লিকেট এরর দেবে না)
   variants: Joi.array()
     .items(
       Joi.object({
-        name: Joi.string().trim().required(),
-
-        values: Joi.array()
-          .items(Joi.string().trim().required())
-          .min(1)
-          .required(),
+        attributeName: Joi.string().trim().required(),
+        attributeValue: Joi.string().trim().required(), // একই ভ্যালু একাধিকবার এন্ট্রি করার অনুমতি দেওয়া হলো
+        model: Joi.string().trim().max(100).allow(null, ""),
+        barcode: Joi.string().trim().max(100).allow(null, ""),
+        warrantyId: Joi.string().regex(objectIdPattern).allow(null, ""),
       }),
     )
     .default([]),
-
-  createdAt: Joi.date().default(() => new Date()),
 });
 
 export const updateProductSchema = Joi.object({
