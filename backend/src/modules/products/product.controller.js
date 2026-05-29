@@ -1,5 +1,373 @@
+//modules/products/product.controller.js
 import { ObjectId } from "mongodb";
 import { getDB } from "../../config/db.js";
+import { COLLECTIONS } from "../../database/collections.js";
+import { generateProductCode } from "../../utils/sku/generateProductCode.js";
+import { generateVariantSKU } from "../../utils/sku/generateVariantSKU.js";
+
+/* =========================================================
+   GENERATE VARIANT COMBINATIONS
+========================================================= */
+
+const generateVariants = (variants = []) => {
+  if (!variants.length) return [];
+
+  const result = [];
+
+  const recurse = (index, current) => {
+    if (index === variants.length) {
+      result.push(current);
+
+      return;
+    }
+
+    const variant = variants[index];
+
+    for (const value of variant.values) {
+      recurse(index + 1, {
+        ...current,
+
+        [variant.name]: value,
+      });
+    }
+  };
+
+  recurse(0, {});
+
+  return result;
+};
+
+/* =========================================================
+   BUILD VARIANT TITLE
+========================================================= */
+
+const buildVariantTitle = (productName, attributes = {}) => {
+  return `${productName} - ${Object.values(attributes).join(" / ")}`;
+};
+
+/* =========================================================
+   CREATE PRODUCT
+========================================================= */
+
+export const createProduct = async (req, res, next) => {
+  const db = getDB();
+
+  const session = db.client.startSession();
+
+  try {
+    const payload = req.body;
+
+    const {
+      name,
+
+      productTypeId,
+
+      categoryId,
+
+      subCategoryId,
+
+      brandId,
+
+      unitId,
+
+      barcode,
+
+      model,
+
+      rackNo,
+
+      description,
+
+      variants = [],
+    } = payload;
+
+    /* =========================================================
+       REQUIRED VALIDATIONS
+    ========================================================= */
+
+    if (
+      !name ||
+      !productTypeId ||
+      !categoryId ||
+      !subCategoryId ||
+      !brandId ||
+      !unitId
+    ) {
+      return res.status(400).json({
+        success: false,
+
+        message: "Required fields missing",
+      });
+    }
+
+    /* =========================================================
+       OBJECT ID VALIDATIONS
+    ========================================================= */
+
+    const ids = [productTypeId, categoryId, subCategoryId, brandId, unitId];
+
+    const invalidIds = ids.some((id) => !ObjectId.isValid(id));
+
+    if (invalidIds) {
+      return res.status(400).json({
+        success: false,
+
+        message: "Invalid ids",
+      });
+    }
+
+    /* =========================================================
+       START TRANSACTION
+    ========================================================= */
+
+    await session.withTransaction(async () => {
+      /* =========================================================
+         FIND PRODUCT TYPE
+      ========================================================= */
+
+      const productType = await db
+        .collection(COLLECTIONS.PRODUCT_TYPES)
+        .findOne(
+          {
+            _id: new ObjectId(productTypeId),
+
+            status: "active",
+          },
+          {
+            session,
+          },
+        );
+
+      if (!productType) {
+        throw new Error("Invalid product type");
+      }
+
+      /* =========================================================
+         VALIDATE CATEGORY
+      ========================================================= */
+
+      const category = await db.collection(COLLECTIONS.CATEGORIES).findOne(
+        {
+          _id: new ObjectId(categoryId),
+        },
+        {
+          session,
+        },
+      );
+
+      if (!category) {
+        throw new Error("Invalid category");
+      }
+
+      /* =========================================================
+         VALIDATE BRAND
+      ========================================================= */
+
+      const brand = await db.collection(COLLECTIONS.BRANDS).findOne(
+        {
+          _id: new ObjectId(brandId),
+        },
+        {
+          session,
+        },
+      );
+
+      if (!brand) {
+        throw new Error("Invalid brand");
+      }
+
+      /* =========================================================
+         VALIDATE UNIT
+      ========================================================= */
+
+      const unit = await db.collection(COLLECTIONS.UNITS).findOne(
+        {
+          _id: new ObjectId(unitId),
+        },
+        {
+          session,
+        },
+      );
+
+      if (!unit) {
+        throw new Error("Invalid unit");
+      }
+
+      /* =========================================================
+         DUPLICATE CHECK
+      ========================================================= */
+
+      const exists = await db.collection(COLLECTIONS.PRODUCTS).findOne(
+        {
+          name: name.trim(),
+
+          brandId: new ObjectId(brandId),
+
+          categoryId: new ObjectId(categoryId),
+        },
+        {
+          session,
+        },
+      );
+
+      if (exists) {
+        throw new Error("Product already exists");
+      }
+
+      /* =========================================================
+         GENERATE PRODUCT CODE
+      ========================================================= */
+
+      const productCode = await generateProductCode({
+        db,
+
+        productTypeCode: productType.code,
+
+        session,
+      });
+
+      /* =========================================================
+         GENERATE VARIANT COMBINATIONS
+      ========================================================= */
+
+      const generatedVariants = generateVariants(variants);
+
+      /* =========================================================
+         PRODUCT DOC
+      ========================================================= */
+
+      const now = new Date();
+
+      const productDoc = {
+        name: name.trim(),
+
+        slug: name.trim().toLowerCase().replace(/\s+/g, "-"),
+
+        productCode,
+
+        productTypeId: new ObjectId(productTypeId),
+
+        categoryId: new ObjectId(categoryId),
+
+        subCategoryId: new ObjectId(subCategoryId),
+
+        brandId: new ObjectId(brandId),
+
+        unitId: new ObjectId(unitId),
+
+        barcode: barcode || null,
+
+        model: model || null,
+
+        rackNo: rackNo || null,
+
+        description: description || null,
+
+        variantSchema: variants,
+
+        hasVariants: generatedVariants.length > 0,
+
+        status: "active",
+
+        createdAt: now,
+
+        updatedAt: now,
+      };
+
+      /* =========================================================
+         INSERT PRODUCT
+      ========================================================= */
+
+      const productRes = await db
+        .collection(COLLECTIONS.PRODUCTS)
+        .insertOne(productDoc, {
+          session,
+        });
+
+      const productId = productRes.insertedId;
+
+      /* =========================================================
+         CREATE PRODUCT VARIANTS
+      ========================================================= */
+
+      const variantDocs = [];
+
+      for (const variant of generatedVariants) {
+        const { sku, variantCode } = await generateVariantSKU({
+          db,
+
+          productId,
+
+          productCode,
+
+          session,
+        });
+
+        variantDocs.push({
+          productId,
+
+          productCode,
+
+          sku,
+
+          variantCode,
+
+          title: buildVariantTitle(name, variant),
+
+          attributes: variant,
+
+          barcode: null,
+
+          purchasePrice: 0,
+
+          salePrice: 0,
+
+          stock: 0,
+
+          status: "active",
+
+          createdAt: now,
+
+          updatedAt: now,
+        });
+      }
+
+      /* =========================================================
+         INSERT VARIANTS
+      ========================================================= */
+
+      if (variantDocs.length) {
+        await db
+          .collection(COLLECTIONS.VARIANTS)
+          .insertMany(variantDocs, {
+            session,
+          });
+      }
+
+      /* =========================================================
+         RESPONSE
+      ========================================================= */
+
+      res.status(201).json({
+        success: true,
+
+        message: "Product created successfully",
+
+        data: {
+          productId,
+
+          productCode,
+
+          totalVariants: variantDocs.length,
+        },
+      });
+    });
+  } catch (error) {
+    next(error);
+  } finally {
+    await session.endSession();
+  }
+};
 
 export const getProducts = async (req, res, next) => {
   try {

@@ -6,7 +6,7 @@ import WarrantyCreateModal from "./WarrantyCreateModal";
 
 const WarrantyPage = () => {
   const { modals, openModal, closeModal } = useModalManager();
-  const table = useTableManager("/utils?type=warranty");
+  const table = useTableManager("/utils/warranty");
 
   return (
     <Page title="Warranty" subTitle="Manage your organization warranty">

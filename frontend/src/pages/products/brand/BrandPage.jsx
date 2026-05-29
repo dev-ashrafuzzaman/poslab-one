@@ -6,7 +6,7 @@ import BrandCreateModal from "./BrandCreateModal";
 
 const UnitPage = () => {
   const { modals, openModal, closeModal } = useModalManager();
-  const table = useTableManager("/utils?type=brand");
+  const table = useTableManager("/utils/brand");
 
   return (
     <Page title="Brand" subTitle="Manage your organization brand">
@@ -30,6 +30,7 @@ const UnitPage = () => {
         ]}
         columns={[
           { key: "name", label: "Name" },
+          { key: "slug", label: "Slug" },
           {
             key: "status",
             label: "Status",

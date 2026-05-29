@@ -19,7 +19,6 @@ export default function WarrantyCreateModal({ isOpen, setIsOpen, refetch }) {
     defaultValues: {
       name: "",
       durationDays: 0,
-      type: "warranty",
     },
   });
 

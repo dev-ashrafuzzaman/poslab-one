@@ -8,6 +8,7 @@ export const Config = {
     name: import.meta.env.VITE_APP_NAME || 'AccountingPro',
     env: ENV || 'development',
     baseUrl: import.meta.env.VITE_APP_BASE_URL || 'http://localhost:5173',
+    version: "v1.0.0 LTS",
   },
 
   api: {
@@ -43,6 +44,7 @@ export const Config = {
   support: {
     email: import.meta.env.VITE_SUPPORT_EMAIL || 'support@yourcompany.com',
   },
+  
 };
 
 // Optional helper functions

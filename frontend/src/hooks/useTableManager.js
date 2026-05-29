@@ -11,7 +11,7 @@ export default function useTableManager(route, options = {}) {
     initialQuery = { page: 1, limit: 30 },
     transform,
     staleTime = 30_000,
-    onError,
+    onError, 
     enabled = true, // 🔥 KEY ADDITION
     keepPreviousData = true,
   } = options;

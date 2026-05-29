@@ -4,9 +4,9 @@ import { Check, ChevronsUpDown } from "lucide-react";
 import { sizeMap } from "../../constants/uiConfig";
 
 export default function Select({
-  label,                     // ✅ ADD
+  label,
   options = [],
-  value,
+  value = null,
   onChange,
   placeholder = "Select...",
   className = "",

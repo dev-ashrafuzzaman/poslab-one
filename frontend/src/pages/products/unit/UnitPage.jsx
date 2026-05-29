@@ -6,7 +6,7 @@ import UnitCreateModal from "./UnitCreateModal";
 
 const UnitPage = () => {
   const { modals, openModal, closeModal } = useModalManager();
-  const table = useTableManager("/utils?type=unit");
+  const table = useTableManager("/utils/unit");
 
   return (
     <Page title="Units" subTitle="Manage your organization units">
@@ -30,6 +30,7 @@ const UnitPage = () => {
         ]}
         columns={[
           { key: "name", label: "Name" },
+          { key: "slug", label: "Slug" },
           {
             key: "status",
             label: "Status",

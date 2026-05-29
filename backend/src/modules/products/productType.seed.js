@@ -1,60 +1,57 @@
 export const seedProductTypes = async (db) => {
-  /**
-   * 🔒 SYSTEM MASTER: PRODUCT TYPES
-   *
-   * code (TT) = 2-digit IMMUTABLE
-   * Used in SKU: TT + PPPP + VVV
-   *
-   * sizeType rules:
-   * - TEXT   → uses defaultSizes
-   * - NUMBER → uses defaultSizeRange
-   * - N/A    → no size
-   */
+
 
   await db.collection("product_types").deleteMany({ isSystem: true });
 
   const types = [
     {
-      name: "Garments",
+      name: "Serial",
       code: "01",
-      description: "Clothing items with text sizes",
-      sizeType: "TEXT",
-      defaultSizes: ["XS", "S", "M", "L", "XL", "XXL"],
+      slug: "serial",
+      status: "active",
     },
+
     {
-      name: "Shoes",
+      name: "Non Serial",
       code: "02",
-      description: "Footwear with numeric sizes",
-      sizeType: "NUMBER",
-      defaultSizeRange: { min: 35, max: 45, step: 1 },
+      slug: "non-serial",
+      status: "active",
     },
+
     {
-      name: "Pants",
+      name: "Service",
       code: "03",
-      description: "Waist-size based bottoms",
-      sizeType: "NUMBER",
-      defaultSizeRange: { min: 28, max: 40, step: 1 },
+      slug: "service",
+      status: "active",
     },
+
     {
-      name: "Accessories",
+      name: "Digital",
       code: "04",
-      description: "Non-size items like belt, bag, cap",
-      sizeType: "N/A",
+      slug: "digital",
+      status: "active",
+    },
+
+    {
+      name: "Bundle / Package",
+      code: "05",
+      slug: "bundle-package",
+      status: "active",
+    },
+
+    {
+      name: "Consumable",
+      code: "06",
+      slug: "consumable",
+      status: "active",
     },
   ];
 
   const docs = types.map((t) => ({
     name: t.name,
-    code: t.code, // 🔑 TT
-    description: t.description,
-    sizeType: t.sizeType,
-
-    // conditional fields
-    defaultSizes: t.sizeType === "TEXT" ? t.defaultSizes : undefined,
-    defaultSizeRange:
-      t.sizeType === "NUMBER" ? t.defaultSizeRange : undefined,
-
-    status: "active",
+    code: t.code, 
+    slug: t.slug,
+    status: t.status,
     isSystem: true,
     createdAt: new Date(),
     updatedAt: new Date(),

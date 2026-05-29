@@ -18,12 +18,11 @@ export default function UnitCreateModal({ isOpen, setIsOpen, refetch }) {
   } = useForm({
     defaultValues: {
       name: "",
-      type: "unit",
     },
   });
 
   const onSubmit = async (data) => {
-    await request("/utils", "POST", data, {
+    await request("/utils/unit", "POST", data, {
       successMessage: "Unit created successfully",
       onSuccess: () => {
         reset();

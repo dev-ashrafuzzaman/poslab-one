@@ -62,9 +62,7 @@ const Login = () => {
             <h2 className="mt-4 text-2xl font-semibold text-gray-700 ">
               Welcome Back
             </h2>
-            <p className="text-sm text-gray-500 ">
-              {Config.app.name}
-            </p>
+            <p className="text-sm text-gray-500 ">{Config.app.name}</p>
           </div>
 
           {/* Card */}
@@ -157,6 +155,9 @@ const Login = () => {
             <span className="mx-2.5 w-px bg-gray-300" />
             <Link to="/terms">Terms of Service</Link>
           </div>
+          <p className="mt-2 flex justify-center text-xs text-gray-400">
+            v1.0.0 LTS
+          </p>
         </div>
       </main>
     </Page>
@@ -164,3 +165,9 @@ const Login = () => {
 };
 
 export default Login;
+
+// v1.0.0 → Initial Stable Release
+// v1.1.0 → Added Accounting Module
+// v1.2.0 → Added POS & Inventory
+// v1.2.3 → Fixed invoice print bug
+// v2.0.0 → Full system redesign

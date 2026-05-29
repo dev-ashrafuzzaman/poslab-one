@@ -17,13 +17,12 @@ export default function BrandCreateModal({ isOpen, setIsOpen, refetch }) {
     formState: { errors },
   } = useForm({
     defaultValues: {
-      name: "",
-      type: "brand",
+      name: ""
     },
   });
 
   const onSubmit = async (data) => {
-    await request("/utils", "POST", data, {
+    await request("/utils/brand", "POST", data, {
       successMessage: "Brand created successfully",
       onSuccess: () => {
         reset();

@@ -1,47 +1,47 @@
 import Joi from "joi";
 
-/**
- * FRONTEND WILL SEND:
- * - productTypeId (required)
- * - sizeType (TEXT | NUMBER | N/A)
- * - sizeConfig ONLY IF NUMBER
- */
-
 export const createProductSchema = Joi.object({
   name: Joi.string().trim().min(3).max(150).required(),
 
-  categoryId: Joi.string().required(),
-  level1Id: Joi.string().required(),
+  productTypeId: Joi.string().trim().required(),
 
-  productTypeId: Joi.string().required(),
+  categoryId: Joi.string().trim().required(),
 
-  brand: Joi.string().trim().default("Richwear"),
+  subCategoryId: Joi.string().trim().required(),
 
-  unit: Joi.string()
-    .valid("PCS", "PAIR", "COMBO")
-    .default("PCS"),
+  brandId: Joi.string().trim().required(),
 
-  sizeType: Joi.string()
-    .valid("TEXT", "NUMBER", "N/A")
-    .required(),
+  unitId: Joi.string().trim().required(),
 
-  // Only allowed for NUMBER
-  sizeConfig: Joi.object({
-    min: Joi.number().positive().required(),
-    max: Joi.number().positive().greater(Joi.ref("min")).required(),
-    step: Joi.number().positive().default(1),
-  }).optional(),
+  barcode: Joi.string().trim().max(100).allow(null, ""),
 
-  colors: Joi.array().items(Joi.string()).default([]),
+  model: Joi.string().trim().max(100).required(),
 
-  status: Joi.string()
-    .valid("active", "inactive")
-    .default("active"),
+  rackNo: Joi.string().trim().max(50).allow(null, ""),
+
+  description: Joi.string().trim().allow(null, ""),
+
+  status: Joi.string().valid("active", "inactive").default("active"),
+
+  variants: Joi.array()
+    .items(
+      Joi.object({
+        name: Joi.string().trim().required(),
+
+        values: Joi.array()
+          .items(Joi.string().trim().required())
+          .min(1)
+          .required(),
+      }),
+    )
+    .default([]),
+
+  createdAt: Joi.date().default(() => new Date()),
 });
 
 export const updateProductSchema = Joi.object({
   name: Joi.string().trim().optional(),
   brand: Joi.string().trim().optional(),
   unit: Joi.string().valid("PCS", "METER", "PAIR").optional(),
-  status: Joi.string().valid("active", "inactive").optional()
+  status: Joi.string().valid("active", "inactive").optional(),
 }).min(1);

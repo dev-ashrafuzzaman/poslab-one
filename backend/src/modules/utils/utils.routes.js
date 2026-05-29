@@ -11,27 +11,64 @@ import {
 import { authenticate } from "../../middlewares/auth.middleware.js";
 import { COLLECTIONS } from "../../database/collections.js";
 import { createUnitSchema, createWarrantySchema } from "./utils.validations.js";
+import {
+  beforeCreateBrand,
+  beforeCreateUnit,
+  beforeCreateWarranty,
+} from "./utils.hooks.js";
 
 const router = Router();
-const COLLECTION = COLLECTIONS.UTILS;
+const COLLECTION = COLLECTIONS.UNITS;
 
 router.use(authenticate);
 
 router.post(
-  "/",
+  "/unit",
+  beforeCreateUnit,
   createOne({ collection: COLLECTION, schema: createUnitSchema }),
-);
-router.post(
-  "/warranty",
-  createOne({ collection: COLLECTION, schema: createWarrantySchema }),
 );
 
 router.get(
-  "/",
+  "/unit",
   getAll({
-    collection: COLLECTIONS.UTILS,
+    collection: COLLECTION,
     searchableFields: ["name"],
-    filterableFields: ["status", "type"],
+    filterableFields: ["status"],
+  }),
+);
+
+router.post(
+  "/warranty",
+  beforeCreateWarranty,
+  createOne({
+    collection: COLLECTIONS.WARRANTIES,
+    schema: createWarrantySchema,
+  }),
+);
+
+router.get(
+  "/warranty",
+  getAll({
+    collection: COLLECTIONS.WARRANTIES,
+    searchableFields: ["name"],
+    filterableFields: ["status"],
+  }),
+);
+router.post(
+  "/brand",
+  beforeCreateBrand,
+  createOne({
+    collection: COLLECTIONS.BRANDS,
+    schema: createUnitSchema,
+  }),
+);
+
+router.get(
+  "/brand",
+  getAll({
+    collection: COLLECTIONS.BRANDS,
+    searchableFields: ["name"],
+    filterableFields: ["status"],
   }),
 );
 
