@@ -18,9 +18,9 @@ import { TrendingUp, TrendingDown, DollarSign, Calendar, ArrowUpRight, ArrowDown
 // Metric Card Component
 const MetricCard = ({ title, value, change, prefix = "", suffix = "", trend = "up" }) => {
   const getTrendColor = () => {
-    if (trend === "up") return "text-emerald-600 dark:text-emerald-400";
-    if (trend === "down") return "text-rose-600 dark:text-rose-400";
-    return "text-gray-600 dark:text-gray-400";
+    if (trend === "up") return "text-emerald-600";
+    if (trend === "down") return "text-rose-600";
+    return "text-gray-600";
   };
 
   const getTrendIcon = () => {
@@ -30,12 +30,12 @@ const MetricCard = ({ title, value, change, prefix = "", suffix = "", trend = "u
   };
 
   return (
-    <div className="bg-linear-to-br from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
-      <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+    <div className="bg-linear-to-br from-gray-50 to-white rounded-xl p-4 border border-gray-100">
+      <p className="text-sm font-medium text-gray-500 mb-1">
         {title}
       </p>
       <div className="flex items-baseline justify-between">
-        <div className="text-2xl font-bold text-gray-900 dark:text-white">
+        <div className="text-2xl font-bold text-gray-900">
           {prefix}{typeof value === "number" ? value.toLocaleString() : value}{suffix}
         </div>
         {change !== undefined && (
@@ -61,21 +61,21 @@ const KPICard = ({ icon: Icon, label, value, subValue, color = "blue" }) => {
   };
 
   return (
-    <div className="group relative bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+    <div className="group relative bg-white rounded-xl p-5 border border-gray-100 hover:shadow-lg transition-all duration-300">
       <div className="flex items-start gap-4">
         <div className={`p-3 rounded-xl bg-linear-to-br ${colors[color]} shadow-lg shadow-${color}-500/20`}>
           <Icon className="w-5 h-5 text-white" />
         </div>
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+          <p className="text-sm font-medium text-gray-500 mb-1">
             {label}
           </p>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-bold text-gray-900 dark:text-white">
+            <span className="text-2xl font-bold text-gray-900">
               {value}
             </span>
             {subValue && (
-              <span className="text-sm text-gray-500 dark:text-gray-400">
+              <span className="text-sm text-gray-500">
                 {subValue}
               </span>
             )}
@@ -91,19 +91,19 @@ const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload || !payload.length) return null;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-xl p-4 min-w-[200px]">
-      <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3 pb-2 border-b border-gray-100 dark:border-gray-700">
+    <div className="bg-white rounded-lg border border-gray-200 shadow-xl p-4 min-w-[200px]">
+      <p className="text-sm font-medium text-gray-600 mb-3 pb-2 border-b border-gray-100">
         {label}
       </p>
       {payload.map((entry, index) => (
         <div key={index} className="flex items-center justify-between gap-6 py-1">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-            <span className="text-sm text-gray-600 dark:text-gray-400">
+            <span className="text-sm text-gray-600">
               {entry.name}:
             </span>
           </div>
-          <span className="text-sm font-semibold text-gray-900 dark:text-white">
+          <span className="text-sm font-semibold text-gray-900">
             {entry.name === "Revenue" 
               ? `${entry.value.toLocaleString()}`
               : entry.name === "Orders"
@@ -117,8 +117,8 @@ const CustomTooltip = ({ active, payload, label }) => {
       
       {/* Quick Insights */}
       {payload.length >= 2 && (
-        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+        <div className="mt-3 pt-3 border-t border-gray-100">
+          <p className="text-xs text-gray-500">
             {payload[1]?.value > 0 
               ? `✨ ${Math.round((payload[0]?.value / payload[1]?.value) * 100) / 100} orders per 1K revenue`
               : "No orders recorded"}
@@ -132,7 +132,6 @@ const CustomTooltip = ({ active, payload, label }) => {
 // Main Sales Chart Component
 export const SalesChart = ({ data }) => {
   const [metricType, setMetricType] = useState("revenue"); // revenue, orders, conversion
-
 
   // Calculate metrics
   const metrics = useMemo(() => {
@@ -249,31 +248,31 @@ export const SalesChart = ({ data }) => {
   const config = getChartConfig();
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm">
+    <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
       {/* Header with Executive Summary */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <h3 className="text-lg font-semibold text-gray-900">
               Sales Performance Dashboard
             </h3>
-            <span className="px-2.5 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded-full">
+            <span className="px-2.5 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 rounded-full">
               Real-time
             </span>
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-gray-500">
             Comprehensive revenue analysis and performance metrics
           </p>
         </div>
 
         {/* Metric Selector */}
-        <div className="flex items-center gap-2 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
+        <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-lg">
           <button
             onClick={() => handleMetricChange("revenue")}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
               metricType === "revenue"
-                ? "bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm"
-                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                ? "bg-white text-blue-600 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
             }`}
           >
             Revenue
@@ -282,8 +281,8 @@ export const SalesChart = ({ data }) => {
             onClick={() => handleMetricChange("orders")}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
               metricType === "orders"
-                ? "bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-400 shadow-sm"
-                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                ? "bg-white text-emerald-600 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
             }`}
           >
             Orders
@@ -292,8 +291,8 @@ export const SalesChart = ({ data }) => {
             onClick={() => handleMetricChange("conversion")}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
               metricType === "conversion"
-                ? "bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 shadow-sm"
-                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                ? "bg-white text-purple-600 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
             }`}
           >
             Conversion
@@ -324,13 +323,6 @@ export const SalesChart = ({ data }) => {
           subValue="per trxn"
           color="amber"
         />
-        {/* <KPICard
-          icon={Calendar}
-          label="Peak Day"
-          value={metrics.peakDay ? formatShortDate(metrics.peakDay.date) : "N/A"}
-          subValue={metrics.peakDay ? `$${metrics.peakDay.sales?.toLocaleString()}` : ""}
-          color="purple"
-        /> */}
       </div>
 
       {/* Main Chart */}
@@ -406,7 +398,7 @@ export const SalesChart = ({ data }) => {
               iconType="circle"
               iconSize={8}
               formatter={(value) => (
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <span className="text-sm font-medium text-gray-700">
                   {value}
                 </span>
               )}
@@ -453,39 +445,39 @@ export const SalesChart = ({ data }) => {
       </div>
 
       {/* Footer with Quick Insights */}
-      <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">
+      <div className="mt-6 pt-6 border-t border-gray-100">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-blue-600" />
             </div>
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Revenue Trend</p>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+              <p className="text-xs text-gray-500">Revenue Trend</p>
+              <p className="text-sm font-semibold text-gray-900">
                 {metrics.revenueGrowth > 0 ? '+' : ''}{metrics.revenueGrowth.toFixed(1)}% vs previous period
               </p>
             </div>
           </div>
           
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-              <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-emerald-600" />
             </div>
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Efficiency</p>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+              <p className="text-xs text-gray-500">Efficiency</p>
+              <p className="text-sm font-semibold text-gray-900">
                 {metrics.avgOrderValue.toLocaleString()} avg per order
               </p>
             </div>
           </div>
           
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-              <Calendar className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+              <Calendar className="w-4 h-4 text-purple-600" />
             </div>
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Peak Performance</p>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+              <p className="text-xs text-gray-500">Peak Performance</p>
+              <p className="text-sm font-semibold text-gray-900">
                 {metrics.peakDay ? formatShortDate(metrics.peakDay.date) : "N/A"}
               </p>
             </div>

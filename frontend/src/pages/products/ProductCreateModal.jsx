@@ -177,7 +177,6 @@ console.log(payload)
             <Button
               disabled={!confirmed}
               onClick={handleSubmit(onSubmit)}
-              prefix={<Loader2 className="w-4 h-4 animate-spin" />}
             >
               Generate Product Engine
             </Button>

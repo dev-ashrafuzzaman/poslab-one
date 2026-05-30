@@ -40,14 +40,14 @@ const StatCard = React.memo(({ title, value, icon, color = "blue" }) => {
   };
 
   const bgColors = {
-    blue: "bg-blue-50 dark:bg-blue-900/20",
-    green: "bg-emerald-50 dark:bg-emerald-900/20",
-    purple: "bg-purple-50 dark:bg-purple-900/20",
-    orange: "bg-orange-50 dark:bg-orange-900/20",
+    blue: "bg-blue-50",
+    green: "bg-emerald-50",
+    purple: "bg-purple-50",
+    orange: "bg-orange-50",
   };
 
   return (
-    <div className="group relative bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all duration-300">
+    <div className="group relative bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300">
       <div className="flex items-start justify-between">
         <div>
           <div className={`inline-flex p-3 rounded-xl ${bgColors[color]} mb-4`}>
@@ -55,10 +55,10 @@ const StatCard = React.memo(({ title, value, icon, color = "blue" }) => {
               {icon}
             </div>
           </div>
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+          <p className="text-sm font-medium text-gray-500">
             {title}
           </p>
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+          <h3 className="text-2xl font-bold text-gray-900 mt-1">
             {typeof value === "number"
               ? title.includes("Revenue")
                 ? `${value.toLocaleString()}`
@@ -79,9 +79,9 @@ const PerformanceMetrics = ({ metrics }) => {
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6"
+            className="bg-gray-50 rounded-2xl p-6"
           >
-            <p className="text-gray-400 dark:text-gray-500">
+            <p className="text-gray-400">
               No data available
             </p>
           </div>
@@ -92,44 +92,44 @@ const PerformanceMetrics = ({ metrics }) => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div className="bg-linear-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-2xl p-6 border border-blue-100 dark:border-blue-800/30">
+      <div className="bg-linear-to-br from-blue-50 to-cyan-50 rounded-2xl p-6 border border-blue-100">
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-            <Activity className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <div className="p-2 rounded-lg bg-blue-100">
+            <Activity className="w-5 h-5 text-blue-600" />
           </div>
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <span className="text-sm font-medium text-gray-700">
             Avg. Order Value
           </span>
         </div>
-        <div className="text-3xl font-bold text-gray-900 dark:text-white">
+        <div className="text-3xl font-bold text-gray-900">
           {metrics?.avgOrder?.toLocaleString() || 0}
         </div>
       </div>
 
-      <div className="bg-linear-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-2xl p-6 border border-emerald-100 dark:border-emerald-800/30">
+      <div className="bg-linear-to-br from-emerald-50 to-green-50 rounded-2xl p-6 border border-emerald-100">
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
-            <ShoppingBag className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          <div className="p-2 rounded-lg bg-emerald-100">
+            <ShoppingBag className="w-5 h-5 text-emerald-600" />
           </div>
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <span className="text-sm font-medium text-gray-700">
             Items per Order
           </span>
         </div>
-        <div className="text-3xl font-bold text-gray-900 dark:text-white">
+        <div className="text-3xl font-bold text-gray-900">
           {metrics?.itemsPerOrder || 0}
         </div>
       </div>
 
-      <div className="bg-linear-to-br from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 rounded-2xl p-6 border border-purple-100 dark:border-purple-800/30">
+      <div className="bg-linear-to-br from-purple-50 to-violet-50 rounded-2xl p-6 border border-purple-100">
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-            <DollarSign className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+          <div className="p-2 rounded-lg bg-purple-100">
+            <DollarSign className="w-5 h-5 text-purple-600" />
           </div>
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <span className="text-sm font-medium text-gray-700">
             Total Orders
           </span>
         </div>
-        <div className="text-3xl font-bold text-gray-900 dark:text-white">
+        <div className="text-3xl font-bold text-gray-900">
           {metrics?.orders || 0}
         </div>
       </div>
@@ -147,7 +147,6 @@ const useDashboardData = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      // Get date range from query params or default to "today"
       const range = searchParams.get("range") || "today";
 
       const res = await request(
@@ -223,10 +222,10 @@ export default function Dashboard() {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-gray-900 dark:text-white font-medium mb-2">
+          <p className="text-gray-900 font-medium mb-2">
             Failed to load data
           </p>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+          <p className="text-gray-600 mb-4">{error}</p>
           <Button onClick={refetch} variant="primary">
             <RefreshCw className="w-4 h-4 mr-2" />
             Retry
@@ -243,11 +242,11 @@ export default function Dashboard() {
         <div>
           <div className="flex items-center gap-3 mb-2">
             <Sparkles className="w-6 h-6 text-blue-500" />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-2xl font-bold text-gray-900">
               Welcome back, {user?.name || "Admin"}!
             </h1>
           </div>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-gray-600">
             Here's what's happening with your store today.
           </p>
         </div>
@@ -256,7 +255,7 @@ export default function Dashboard() {
           <select
             value={currentrange}
             onChange={(e) => handlerangeChange(e.target.value)}
-            className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {DATE_RANGE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -279,7 +278,7 @@ export default function Dashboard() {
             <button
               key={index}
               onClick={() => (window.location.href = action.path)}
-              className="group bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 hover:shadow-md"
+              className="group bg-white rounded-xl p-4 border border-gray-100 hover:border-blue-300 transition-all duration-200 hover:shadow-md"
             >
               <div className="flex flex-col items-center text-center">
                 <div
@@ -287,7 +286,7 @@ export default function Dashboard() {
                 >
                   <action.icon className="w-5 h-5 text-white" />
                 </div>
-                <p className="font-medium text-gray-900 dark:text-white">
+                <p className="font-medium text-gray-900">
                   {action.label}
                 </p>
               </div>

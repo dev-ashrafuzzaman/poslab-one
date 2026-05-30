@@ -26,7 +26,7 @@ const Input = forwardRef(
           <label
             htmlFor={props.name}
             className={clsx(
-              "mb-1 block text-sm font-medium text-gray-600 dark:text-gray-300 select-none",
+              "mb-1 block text-sm font-medium text-gray-600 select-none",
               labelClassName
             )}
           >
@@ -34,14 +34,14 @@ const Input = forwardRef(
           </label>
         )}
 
-
+        {/* Input Wrapper Container */}
         <div
           className={clsx(
             "flex items-center h-10 rounded-lg border px-3 transition-all duration-150 focus-within:ring-2",
             error
               ? "border-red-500 focus-within:ring-red-300"
-              : "border-gray-300 dark:border-dark-400 focus-within:border-primary-500 focus-within:ring-(--secondary) dark:focus-within:ring-(--secondary)",
-            "bg-white dark:bg-dark-800"
+              : "border-gray-300 focus-within:border-primary-500 focus-within:ring-(--secondary)",
+            "bg-white"
           )}
         >
           {prefix && (
@@ -58,7 +58,7 @@ const Input = forwardRef(
             placeholder={placeholder}
             {...props}
             className={clsx(
-              "w-full bg-transparent outline-none text-gray-800 dark:text-gray-100 placeholder-gray-400 text-sm h-full leading-none",
+              "w-full bg-transparent outline-none text-gray-800 placeholder-gray-400 text-sm h-full leading-none",
               inputClassName
             )}
           />
@@ -70,7 +70,7 @@ const Input = forwardRef(
           )}
         </div>
 
-
+        {/* Error Message */}
         {error && (
           <p className="mt-1 text-xs text-red-500 font-medium">{error}</p>
         )}

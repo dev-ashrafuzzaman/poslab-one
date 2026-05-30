@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 
 export const CategoryDistribution = ({ data }) => {
   // Default colors if not provided in API
@@ -16,13 +17,14 @@ export const CategoryDistribution = ({ data }) => {
     }));
   }, [data]);
 
+  // Fallback state UI if no data is provided
   if (!chartData || chartData.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Category Distribution
         </h3>
-        <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+        <p className="text-gray-500 text-center py-8">
           No category data available
         </p>
       </div>
@@ -30,19 +32,20 @@ export const CategoryDistribution = ({ data }) => {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm">
+    <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-lg font-semibold text-gray-900">
             Category Distribution
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-sm text-gray-500 mt-1">
             Sales by product category
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recharts Pie Layout Engine */}
         <div className="relative w-full h-65">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -64,11 +67,12 @@ export const CategoryDistribution = ({ data }) => {
           </ResponsiveContainer>
         </div>
 
+        {/* Legend & Details Column */}
         <div className="space-y-4">
           {chartData?.map((category, index) => (
             <div
               key={index}
-              className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+              className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-center gap-3">
                 <div
@@ -76,16 +80,16 @@ export const CategoryDistribution = ({ data }) => {
                   style={{ backgroundColor: category.color }}
                 ></div>
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-white">
+                  <p className="font-medium text-gray-900">
                     {category.name}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-xs text-gray-500">
                     {category.value}% of total
                   </p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="font-semibold text-gray-900 dark:text-white">
+                <p className="font-semibold text-gray-900">
                   {category.sales?.toLocaleString() || 0}
                 </p>
               </div>

@@ -1,6 +1,6 @@
 // purchase/components/SupplierInvoiceCard.jsx
-import SupplierSelect from "./SupplierSelect";
 import { FileText, Calendar, CreditCard } from "lucide-react";
+import SupplierSelect from "../../../components/select/SupplierSelect";
 
 export default function SupplierInvoiceCard({
   register,

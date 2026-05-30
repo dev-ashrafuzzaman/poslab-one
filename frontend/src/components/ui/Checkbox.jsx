@@ -16,7 +16,7 @@ const Checkbox = ({ label, className = "", labelClassName = "", ...props }) => {
       {label && (
         <span
           className={clsx(
-            "text-sm text-gray-700 dark:text-gray-300 transition-colors leading-none",
+            "text-sm text-gray-700  transition-colors leading-none",
             labelClassName
           )}
         >

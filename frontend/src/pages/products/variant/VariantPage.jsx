@@ -3,16 +3,16 @@ import useTableManager from "../../../hooks/useTableManager";
 import Page from "../../../components/common/Page";
 import VariantCreateModal from "./VariantCreateModal";
 import DataTable from "../../../components/table/DataTable";
+import { BarcodeIcon } from "lucide-react";
 
 const VariantPage = () => {
   const { modals, openModal, closeModal } = useModalManager();
-
   const table = useTableManager("/variants");
 
   return (
     <Page
-      title="Product Variants"
-      subTitle="Manage your organization product stock variations"
+      title="Product Variants Matrix"
+      subTitle="Manage and monitor your organization's CCTV, Electronic, and IT inventory stocks."
     >
       {modals.addVariant?.isOpen && (
         <VariantCreateModal
@@ -30,13 +30,17 @@ const VariantPage = () => {
             key: "sku",
             label: "SKU / Barcode",
             render: (r) => (
-              <div className="flex flex-col">
-                <span className="font-bold text-slate-800">
+              <div className="flex flex-col gap-0.5 py-1">
+                <span className="font-bold text-slate-800 text-[13px] tracking-wide">
                   {r.sku}
                 </span>
-                {r.barcode && (
-                  <span className="text-xs text-slate-400 font-medium tracking-tight">
+                {r.barcode ? (
+                  <span className="text-[11px] font-medium text-slate-500 ">
                     BC: {r.barcode}
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-normal text-slate-400 italic">
+                    No Barcode
                   </span>
                 )}
               </div>
@@ -44,23 +48,24 @@ const VariantPage = () => {
           },
           {
             key: "title",
-            label: "Product Description Specification",
+            label: "Product Specification & Details",
             render: (r) => (
-              <div className="max-w-md">
-                <span className="text-sm font-semibold text-slate-900 block leading-snug">
+              <div className="max-w-md py-1">
+                <span className="text-sm font-semibold text-slate-900 block leading-snug hover:text-blue-600 transition-colors truncate">
                   {r.title || "—"}
                 </span>
-                <div className="flex flex-wrap items-center gap-2 mt-1">
-                  {" "}
-                  <span className="text-xs text-slate-400 font-medium mt-0.5 block">
-                    Model: {r.model || "Universal Model"}
+                <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                  <span className="text-[11px] text-slate-500 font-medium bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200">
+                    Model: {r.model || "Universal"}
                   </span>
-                  <span className="inline-flex items-center text-[11px] font-medium text-blue-700 bg-blue-50/60 px-2 py-0.5 rounded border border-blue-100/50 w-fit">
-                    {r.attributes.attributeName}:{" "} 
-                    <strong className="ps-1">{r.attributes.attributeValue}</strong>
+                  <span className="inline-flex items-center text-[11px] font-medium text-blue-700 bg-blue-50/70 px-2 py-0.5 rounded border border-blue-100">
+                    {r.attributes?.attributeName || "Specification"}:{" "}
+                    <strong className="ps-1 font-bold text-blue-900">
+                      {r.attributes?.attributeValue || "Base"}
+                    </strong>
                   </span>
                   {r.warrantyName && (
-                    <span className="inline-flex items-center text-[11px] font-medium text-amber-700 bg-amber-50/60 px-2 py-0.5 rounded border border-amber-100/50 w-fit">
+                    <span className="inline-flex items-center text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/60">
                       {r.warrantyName}
                     </span>
                   )}
@@ -68,60 +73,81 @@ const VariantPage = () => {
               </div>
             ),
           },
-
+          {
+            key: "productTypeName",
+            label: "Classification",
+            render: (r) => (
+              <div className="flex flex-col gap-1 py-1 text-[13px]">
+                <div className="flex items-center gap-1 text-slate-700">
+                  {/* <span className="text-xs text-slate-400 font-normal">Type:</span> */}
+                  <span className="font-semibold text-slate-800">
+                    {r.productTypeName || "—"}
+                  </span>
+                </div>
+                <div className="text-xs text-slate-500 flex items-center flex-wrap gap-0.5">
+                  <span className="text-slate-700 font-medium">
+                    {r.parentCategoryName || "—"}
+                  </span>
+                  {r.subCategoryName && (
+                    <>
+                      <span className="text-slate-400 font-normal mx-0.5">
+                        →
+                      </span>
+                      <span className="text-blue-600 font-semibold">
+                        {r.subCategoryName}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+            ),
+          },
           {
             key: "salePrice",
-            label: "Pricing / Costing",
+            label: "Pricing (BDT)",
             render: (r) => (
-              <div className="flex flex-col text-right pr-4">
-                <span className="text-sm font-bold text-slate-900">
-                  {Number(r?.salePrice || 0).toLocaleString()} BDT
+              <div className="flex flex-col text-right pr-4 py-1">
+                <span className="text-sm font-extrabold text-slate-900 tracking-tight">
+                  ৳ {Number(r?.salePrice || 0).toLocaleString("en-IN")}/-
                 </span>
-                <span className="text-[11px] text-slate-400">
-                  Cost: {Number(r?.purchasePrice || 0).toLocaleString()} BDT
+                <span className="text-[11px] font-medium text-slate-400 mt-0.5">
+                  Cost: {Number(r?.purchasePrice || 0).toLocaleString("en-IN")}
                 </span>
               </div>
             ),
           },
           {
             key: "stock",
-            label: "Available Stock",
-            render: (r) => (
-              <div className="text-center">
-                <span
-                  className={`px-2.5 py-1 text-xs font-bold rounded-full ${
-                    (r.stock || 0) > 0
-                      ? "bg-emerald-50 text-emerald-700"
-                      : "bg-slate-100 text-slate-500"
-                  }`}
-                >
-                  {r.stock || 0} Units
-                </span>
-              </div>
-            ),
+            label: "Stock Level",
+            render: (r) => {
+              const currentStock = r.stock || 0;
+              const unitLabel = r.unitName || "Units";
+
+              return (
+                <div className="text-center py-1">
+                  <span
+                    className={`inline-block px-3 py-1 text-xs font-bold rounded-full min-w-18.75 shadow-sm tracking-wide ${
+                      currentStock > 5
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                        : currentStock > 0
+                          ? "bg-amber-50 text-amber-700 border border-amber-200"
+                          : "bg-rose-50 text-rose-600 border border-rose-100"
+                    }`}
+                  >
+                    {currentStock} {unitLabel}
+                  </span>
+                </div>
+              );
+            },
           },
+
           {
-            key: "status",
-            label: "Status",
-            render: (r) => (
-              <span
-                className={`status ${
-                  r.status === "active" ? "approved" : "rejected"
-                }`}
-              >
-                {r.status === "active" ? "Active" : "Inactive"}
-              </span>
-            ),
+            key: "createdAt",
+            label: "Registered",
           },
-          { key: "createdAt", label: "Registered" },
         ]}
         actions={[
           { type: "edit", label: "Edit Variation" },
-          {
-            type: "status",
-            label: "Change Lifecycle Status",
-            api: (row) => `/variants/${row._id}/status`, // আপনার প্রজেক্ট রাউটার এপিআই পাথ
-          },
         ]}
       />
     </Page>

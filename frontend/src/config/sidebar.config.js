@@ -184,7 +184,7 @@ export const SIDEBAR_MENU = [
         submenu: [
           { title: "Customers", to: "/parties/customers" },
           { title: "Memberships", to: "/parties/memberships" },
-          { title: "Wholesalers", to: "/parties//wholesalers" },
+          { title: "Wholesalers", to: "/parties/wholesalers" },
           { title: "Dealers", to: "/parties/dealers" },
           { title: "Suppliers", to: "/parties/suppliers" },
           { title: "Employees", to: "/parties/Employees" },
