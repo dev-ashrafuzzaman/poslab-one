@@ -84,6 +84,12 @@ function fallbackTitleCase(str) {
     .join(" ");
 }
 
+const toId = (id, label) => {
+  if (!id || !ObjectId.isValid(id))
+    throw new Error(`Invalid or missing ${label}`);
+  return new ObjectId(id);
+};
+
 const buildVariantTitle = (
   brandName,
   productName,
@@ -124,6 +130,10 @@ export const createProduct = async (req, res, next) => {
       warrantyId: masterWarrantyId,
       variants = [],
     } = payload;
+
+    /* =========================================================
+       STRUCTURAL REFERENCE ID VALIDATION LAYER
+    ========================================================= */
     const idsToValidate = [productTypeId, categoryId, brandId, unitId];
     if (subCategoryId) idsToValidate.push(subCategoryId);
     if (masterWarrantyId) idsToValidate.push(masterWarrantyId);
@@ -137,7 +147,11 @@ export const createProduct = async (req, res, next) => {
 
     let transactionResult = null;
 
+    /* =========================================================
+       START ACID TRANSACTION BLOCK
+    ========================================================= */
     await session.withTransaction(async () => {
+      // 1. Fetch Core Metadata Masters (লুপের বাইরে ক্যাশে লোড করা হলো)
       const productType = await db
         .collection(COLLECTIONS.PRODUCT_TYPES)
         .findOne(
@@ -152,6 +166,28 @@ export const createProduct = async (req, res, next) => {
         .findOne({ _id: new ObjectId(brandId) }, { session });
       if (!brand) throw new Error("Referenced brand entity invalid");
 
+      // 💡 🚀 নতুন মাস্টার ইনফো সংগ্রহ: Unit details
+      const unit = await db
+        .collection(COLLECTIONS.UNITS)
+        .findOne({ _id: new ObjectId(unitId) }, { session });
+      if (!unit) throw new Error("Referenced stock keeping unit invalid");
+
+      // 💡 🚀 নতুন মাস্টার ইনফো সংগ্রহ: Parent Category details
+      const parentCategory = await db
+        .collection(COLLECTIONS.CATEGORIES)
+        .findOne({ _id: new ObjectId(categoryId) }, { session });
+      if (!parentCategory)
+        throw new Error("Parent Category validation reference missing");
+
+      // 💡 🚀 নতুন মাস্টার ইনফো সংগ্রহ: Sub Category details
+      let subCategoryName = null;
+      if (subCategoryId) {
+        const subCategory = await db
+          .collection(COLLECTIONS.CATEGORIES)
+          .findOne({ _id: new ObjectId(subCategoryId) }, { session });
+        subCategoryName = subCategory ? subCategory.name : null;
+      }
+
       let masterWarrantyName = null;
       if (masterWarrantyId) {
         const mWarranty = await db
@@ -160,6 +196,9 @@ export const createProduct = async (req, res, next) => {
         masterWarrantyName = mWarranty ? mWarranty.name : null;
       }
 
+      /* =========================================================
+         PARENT PRODUCT CONTEXT LOOKUP & UPSERT ALLOCATION
+      ========================================================= */
       let productId = null;
       let productCode = null;
 
@@ -177,7 +216,9 @@ export const createProduct = async (req, res, next) => {
         productCode = existingProduct.productCode;
 
         if (variants.length > 0) {
-          const freshValues = variants.map((v) => v.attributeValue);
+          const freshValues = variants
+            .map((v) => v.attributeValue?.trim())
+            .filter(Boolean);
           await db.collection(COLLECTIONS.PRODUCTS).updateOne(
             { _id: productId },
             {
@@ -195,7 +236,6 @@ export const createProduct = async (req, res, next) => {
         });
 
         const now = new Date();
-
         const uniqueSpecsArray = [
           ...new Set(
             variants.map((v) => v.attributeValue?.trim()).filter(Boolean),
@@ -234,10 +274,29 @@ export const createProduct = async (req, res, next) => {
         productId = productInsertion.insertedId;
       }
 
+      /* =========================================================
+         DYNAMICAL ALLOCATION FOR INVENTORY VARIANT RECORDS
+      ========================================================= */
       const variantDocs = [];
       const now = new Date();
 
       if (variants.length > 0) {
+        // Atomic Multi-Increment Counter to stop race-condition overlap crashes
+        const counterId = `VARIANT_${String(productId)}`;
+        const totalRowsNeeded = variants.length;
+
+        const counterResult = await db
+          .collection("counters")
+          .findOneAndUpdate(
+            { _id: counterId },
+            { $inc: { seq: totalRowsNeeded } },
+            { upsert: true, returnDocument: "after", session },
+          );
+
+        const currentMaxSeq =
+          counterResult?.seq ?? counterResult?.value?.seq ?? totalRowsNeeded;
+        let startSequence = currentMaxSeq - totalRowsNeeded + 1;
+
         for (const variant of variants) {
           const finalBarcode =
             variant.barcode?.trim() || masterBarcode?.trim() || null;
@@ -265,18 +324,17 @@ export const createProduct = async (req, res, next) => {
             currentVariantWarrantyName,
           );
 
-          const { sku, variantCode } = await generateVariantSKU({
-            db,
-            productId,
-            productCode,
-            session,
-          });
+          // Generate dynamic sequential string padding codes
+          const variantSerial = String(startSequence).padStart(3, "0");
+          const generatedSku = `${productCode}${variantSerial}`;
+          startSequence++;
 
+          // 💡 🚀 ডেনরমালাইজড ডাটা স্ট্রাকচার ম্যাপিং (প্যারেন্ট রিলেশন সহ ভ্যারিয়েন্ট ডক)
           variantDocs.push({
             productId,
             productCode,
-            sku,
-            variantCode,
+            sku: generatedSku,
+            variantCode: variantSerial,
             title: variantTitle,
             attributes: {
               attributeName: variant.attributeName?.trim() || "Specification",
@@ -286,6 +344,14 @@ export const createProduct = async (req, res, next) => {
             model: finalModel,
             warrantyId: currentVariantWarrantyId,
             warrantyName: currentVariantWarrantyName,
+
+            // 🆕 অতিরিক্ত এন্টারপ্রাইজ ইআরপি ইনফো ব্লক
+            productTypeName: productType.name,
+            parentCategoryName: parentCategory.name,
+            subCategoryName: subCategoryName,
+            unitName: unit.name,
+            unitShortName: unit.shortName || unit.name,
+
             purchasePrice: 0,
             salePrice: 0,
             stock: 0,
@@ -295,6 +361,7 @@ export const createProduct = async (req, res, next) => {
           });
         }
       } else if (!existingProduct) {
+        // Fallback Base Lot generation logic
         const baseTitle = buildVariantTitle(
           brand.name,
           name,
@@ -302,24 +369,37 @@ export const createProduct = async (req, res, next) => {
           null,
           masterWarrantyName,
         );
-        const { sku, variantCode } = await generateVariantSKU({
-          db,
-          productId,
-          productCode,
-          session,
-        });
+
+        const counterId = `VARIANT_${String(productId)}`;
+        const counterResult = await db
+          .collection("counters")
+          .findOneAndUpdate(
+            { _id: counterId },
+            { $inc: { seq: 1 } },
+            { upsert: true, returnDocument: "after", session },
+          );
+        const sequence = counterResult?.seq ?? counterResult?.value?.seq ?? 1;
+        const variantSerial = String(sequence).padStart(3, "0");
 
         variantDocs.push({
           productId,
           productCode,
-          sku,
-          variantCode,
+          sku: `${productCode}${variantSerial}`,
+          variantCode: variantSerial,
           title: `${baseTitle}`,
           attributes: { attributeName: "Default", attributeValue: "Base" },
           barcode: masterBarcode?.trim() || null,
           model: masterModel?.trim() || null,
           warrantyId: masterWarrantyId ? new ObjectId(masterWarrantyId) : null,
           warrantyName: masterWarrantyName,
+
+          // 🆕 অতিরিক্ত এন্টারপ্রাইজ ইআরপি ইনফো ব্লক
+          productTypeName: productType.slug,
+          parentCategoryName: parentCategory.name,
+          subCategoryName: subCategoryName,
+          unitName: unit.slug,
+          unitFullName: unit.name,
+
           purchasePrice: 0,
           salePrice: 0,
           stock: 0,

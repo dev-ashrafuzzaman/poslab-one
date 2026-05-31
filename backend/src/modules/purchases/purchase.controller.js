@@ -7,9 +7,6 @@ import {
 
 export const createPurchaseController = async (req, res, next) => {
   try {
-    /* ======================
-       VALIDATION
-    ====================== */
     const { error, value } = createPurchaseSchema.validate(req.body, {
       abortEarly: false,  
       stripUnknown: true, 
@@ -26,9 +23,6 @@ export const createPurchaseController = async (req, res, next) => {
       });
     }
 
-    /* ======================
-       SERVICE CALL
-    ====================== */
     const db = getDB();
 
     const result = await createPurchase({
@@ -37,9 +31,6 @@ export const createPurchaseController = async (req, res, next) => {
       req,
     });
 
-    /* ======================
-       RESPONSE
-    ====================== */
     return res.status(201).json({
       success: true,
       message: "Purchase created successfully",

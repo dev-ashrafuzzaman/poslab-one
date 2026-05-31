@@ -14,6 +14,7 @@ import {
 } from "./accounts.validation.js";
 
 import { validate } from "../../../middlewares/validate.middleware.js";
+import { getPaymentMethods } from "./accounts.service.js";
 
 const router = Router();
 
@@ -22,6 +23,7 @@ router.use(authenticate);
 router.get("/", getAllAccounts);
 router.get("/:id/balance", getAccountBalanceController);
 router.get("/transactions", getTransactions);
+router.get("/payment-methods", getPaymentMethods);
 
 router.post("/", validate(createAccountSchema), createAccount);
 
