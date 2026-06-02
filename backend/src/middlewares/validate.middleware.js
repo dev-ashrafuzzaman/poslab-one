@@ -1,8 +1,8 @@
 export const validate = (schema) => (req, res, next) => {
   const { error, value } = schema.validate(req.body, {
-    abortEarly: false,     // show all errors
-    stripUnknown: true,   // remove extra fields
-    convert: true,        // string → number/date
+    abortEarly: false,     
+    stripUnknown: true,  
+    convert: true,       
   });
 
   if (error) {
@@ -16,7 +16,6 @@ export const validate = (schema) => (req, res, next) => {
     });
   }
 
-  // ✅ ALWAYS use sanitized payload
   req.body = value;
 
   next();

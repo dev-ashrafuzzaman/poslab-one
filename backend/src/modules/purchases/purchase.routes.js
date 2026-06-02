@@ -1,23 +1,25 @@
 import { Router } from "express";
 import {
-  createPurchaseController,
   createPurchaseReturnController,
   createSupplierPaymentController,
 } from "./purchase.controller.js";
 
 import { authenticate } from "../../middlewares/auth.middleware.js";
 import {
+  createPurchase,
   getAllPurchaseReturns,
   getAllPurchases,
   getSinglePurchaseInvoice,
   getSinglePurchaseReturnInvoice,
 } from "./purchase.service.js";
+import { purchaseCreateSchema } from "./purchase.validation.js";
+import { validate } from "../../middlewares/validate.middleware.js";
 
 const router = Router();
 
 router.use(authenticate);
 
-router.post("/", createPurchaseController);
+router.post("/", validate(purchaseCreateSchema), createPurchase);
 router.post(
   "/supplier-payments",
   createSupplierPaymentController

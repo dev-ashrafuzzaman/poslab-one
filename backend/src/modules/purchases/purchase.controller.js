@@ -2,44 +2,9 @@ import { getDB } from "../../config/db.js";
 import { createPurchase, createPurchaseReturn, createSupplierPayment } from "./purchase.service.js";
 import {
   createPurchaseReturnSchema,
-  createPurchaseSchema,
 } from "./purchase.validation.js";
 
-export const createPurchaseController = async (req, res, next) => {
-  try {
-    const { error, value } = createPurchaseSchema.validate(req.body, {
-      abortEarly: false,  
-      stripUnknown: true, 
-    });
 
-    if (error) {
-      return res.status(400).json({
-        success: false,
-        message: "Validation failed",
-        errors: error.details.map(d => ({
-          field: d.path.join("."),
-          message: d.message,
-        })),
-      });
-    }
-
-    const db = getDB();
-
-    const result = await createPurchase({
-      db,
-      body: value,
-      req,
-    });
-
-    return res.status(201).json({
-      success: true,
-      message: "Purchase created successfully",
-      data: result,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
 
 export const createSupplierPaymentController = async (req, res, next) => {
   try {

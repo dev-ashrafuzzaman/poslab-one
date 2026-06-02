@@ -10,6 +10,64 @@ const resolveAccountByCode = async (db, code) => {
   return acc._id;
 };
 
+
+export const purchaseAccounting = async ({
+  db,
+  session,
+  purchaseId,
+  totalAmount,
+  paymentAccountId = null,
+  cashPaid = 0,
+  supplierId,
+  branchId,
+  narration,
+}) => {
+  const SYS = await resolveSystemAccounts(db);
+  const dueAmount = totalAmount - cashPaid;
+
+  if (cashPaid < 0 || dueAmount < 0) {
+    throw new Error("Invalid purchase amount");
+  }
+
+  const entries = [];
+
+  // Inventory increase
+  entries.push({
+    accountId: SYS.INVENTORY,
+    debit: totalAmount,
+  });
+
+  // Cash
+  if (cashPaid > 0) {
+    entries.push({
+      accountId: SYS.CASH,
+      credit: cashPaid,
+    });
+  }
+
+  // Supplier Due
+  if (dueAmount > 0) {
+    entries.push({
+      accountId: SYS.SUPPLIER_AP,
+      credit: dueAmount,
+      partyType: "SUPPLIER",
+      partyId: supplierId,
+    });
+  }
+
+  return postJournalEntry({
+    db,
+    session,
+    date: new Date(),
+    refType: "PURCHASE",
+    refId: purchaseId,
+    narration,
+    entries,
+    branchId,
+  });
+};
+
+
 /* ======================================================
    SALES ACCOUNTING
 ====================================================== */
@@ -259,64 +317,6 @@ export const salesReturnCogsAccounting = async ({
   });
 };
 
-/* ======================================================
-   PURCHASE ACCOUNTING V0.1
-====================================================== */
-export const purchaseAccounting = async ({
-  db,
-  session,
-  purchaseId,
-  totalAmount,
-  paymentAccountId = null,
-  cashPaid = 0,
-  supplierId,
-  branchId,
-  narration,
-}) => {
-  const SYS = await resolveSystemAccounts(db);
-  const dueAmount = totalAmount - cashPaid;
-
-  if (cashPaid < 0 || dueAmount < 0) {
-    throw new Error("Invalid purchase amount");
-  }
-
-  const entries = [];
-
-  // Inventory increase
-  entries.push({
-    accountId: SYS.INVENTORY,
-    debit: totalAmount,
-  });
-
-  // Cash
-  if (cashPaid > 0) {
-    entries.push({
-      accountId: SYS.CASH,
-      credit: cashPaid,
-    });
-  }
-
-  // Supplier Due
-  if (dueAmount > 0) {
-    entries.push({
-      accountId: SYS.SUPPLIER_AP,
-      credit: dueAmount,
-      partyType: "SUPPLIER",
-      partyId: supplierId,
-    });
-  }
-
-  return postJournalEntry({
-    db,
-    session,
-    date: new Date(),
-    refType: "PURCHASE",
-    refId: purchaseId,
-    narration,
-    entries,
-    branchId,
-  });
-};
 
 /* ======================================================
    PURCHASE RETURN ACCOUNTING V0.1

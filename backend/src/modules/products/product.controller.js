@@ -33,7 +33,6 @@ export const aiGenerateName = async (req, res) => {
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-      // 💡 এআই ইঞ্জিন প্রম্পট আপগ্রেড (ইন্টেলিজেন্ট ক্যাটালগ রুলস)
       const systemPrompt = `
         You are an expert catalog compliance officer for an enterprise ERP handling CCTV, IT Hardware, Mobile, and Electrical inventory assets.
         Your job is to polish, standardise, and convert messy or incomplete raw input text into a high-quality, professional product display name.
@@ -46,7 +45,6 @@ export const aiGenerateName = async (req, res) => {
         5. Return ONLY the final formatted string text. Do NOT wrap in markdown quotes, backticks, and provide zero conversational explanation.
       `;
 
-      // 💡 gemini-2.5-flash ব্যবহার করা সবচেয়ে বুদ্ধিমানের কাজ হবে
       const aiResponse = await ai.models.generateContent({
         model: "gemini-2.5-flash",
         contents: `${systemPrompt}\nRaw Input Name to Optimize: "${rawName}"`,
@@ -131,9 +129,6 @@ export const createProduct = async (req, res, next) => {
       variants = [],
     } = payload;
 
-    /* =========================================================
-       STRUCTURAL REFERENCE ID VALIDATION LAYER
-    ========================================================= */
     const idsToValidate = [productTypeId, categoryId, brandId, unitId];
     if (subCategoryId) idsToValidate.push(subCategoryId);
     if (masterWarrantyId) idsToValidate.push(masterWarrantyId);
@@ -146,12 +141,7 @@ export const createProduct = async (req, res, next) => {
     }
 
     let transactionResult = null;
-
-    /* =========================================================
-       START ACID TRANSACTION BLOCK
-    ========================================================= */
     await session.withTransaction(async () => {
-      // 1. Fetch Core Metadata Masters (লুপের বাইরে ক্যাশে লোড করা হলো)
       const productType = await db
         .collection(COLLECTIONS.PRODUCT_TYPES)
         .findOne(
@@ -166,20 +156,17 @@ export const createProduct = async (req, res, next) => {
         .findOne({ _id: new ObjectId(brandId) }, { session });
       if (!brand) throw new Error("Referenced brand entity invalid");
 
-      // 💡 🚀 নতুন মাস্টার ইনফো সংগ্রহ: Unit details
       const unit = await db
         .collection(COLLECTIONS.UNITS)
         .findOne({ _id: new ObjectId(unitId) }, { session });
       if (!unit) throw new Error("Referenced stock keeping unit invalid");
 
-      // 💡 🚀 নতুন মাস্টার ইনফো সংগ্রহ: Parent Category details
       const parentCategory = await db
         .collection(COLLECTIONS.CATEGORIES)
         .findOne({ _id: new ObjectId(categoryId) }, { session });
       if (!parentCategory)
         throw new Error("Parent Category validation reference missing");
 
-      // 💡 🚀 নতুন মাস্টার ইনফো সংগ্রহ: Sub Category details
       let subCategoryName = null;
       if (subCategoryId) {
         const subCategory = await db
@@ -196,9 +183,6 @@ export const createProduct = async (req, res, next) => {
         masterWarrantyName = mWarranty ? mWarranty.name : null;
       }
 
-      /* =========================================================
-         PARENT PRODUCT CONTEXT LOOKUP & UPSERT ALLOCATION
-      ========================================================= */
       let productId = null;
       let productCode = null;
 
@@ -274,14 +258,10 @@ export const createProduct = async (req, res, next) => {
         productId = productInsertion.insertedId;
       }
 
-      /* =========================================================
-         DYNAMICAL ALLOCATION FOR INVENTORY VARIANT RECORDS
-      ========================================================= */
       const variantDocs = [];
       const now = new Date();
 
       if (variants.length > 0) {
-        // Atomic Multi-Increment Counter to stop race-condition overlap crashes
         const counterId = `VARIANT_${String(productId)}`;
         const totalRowsNeeded = variants.length;
 
@@ -324,17 +304,12 @@ export const createProduct = async (req, res, next) => {
             currentVariantWarrantyName,
           );
 
-          // Generate dynamic sequential string padding codes
           const variantSerial = String(startSequence).padStart(3, "0");
           const generatedSku = `${productCode}${variantSerial}`;
           startSequence++;
-
-          // 💡 🚀 ডেনরমালাইজড ডাটা স্ট্রাকচার ম্যাপিং (প্যারেন্ট রিলেশন সহ ভ্যারিয়েন্ট ডক)
           variantDocs.push({
             productId,
-            productCode,
             sku: generatedSku,
-            variantCode: variantSerial,
             title: variantTitle,
             attributes: {
               attributeName: variant.attributeName?.trim() || "Specification",
@@ -344,14 +319,11 @@ export const createProduct = async (req, res, next) => {
             model: finalModel,
             warrantyId: currentVariantWarrantyId,
             warrantyName: currentVariantWarrantyName,
-
-            // 🆕 অতিরিক্ত এন্টারপ্রাইজ ইআরপি ইনফো ব্লক
-            productTypeName: productType.name,
+            productTypeName: productType.slug,
             parentCategoryName: parentCategory.name,
             subCategoryName: subCategoryName,
-            unitName: unit.name,
-            unitShortName: unit.shortName || unit.name,
-
+            unitName: unit.slug,
+            unitFullName: unit.name,
             purchasePrice: 0,
             salePrice: 0,
             stock: 0,
@@ -361,7 +333,6 @@ export const createProduct = async (req, res, next) => {
           });
         }
       } else if (!existingProduct) {
-        // Fallback Base Lot generation logic
         const baseTitle = buildVariantTitle(
           brand.name,
           name,
@@ -383,24 +354,19 @@ export const createProduct = async (req, res, next) => {
 
         variantDocs.push({
           productId,
-          productCode,
           sku: `${productCode}${variantSerial}`,
-          variantCode: variantSerial,
           title: `${baseTitle}`,
           attributes: { attributeName: "Default", attributeValue: "Base" },
           barcode: masterBarcode?.trim() || null,
           model: masterModel?.trim() || null,
           warrantyId: masterWarrantyId ? new ObjectId(masterWarrantyId) : null,
           warrantyName: masterWarrantyName,
-
-          // 🆕 অতিরিক্ত এন্টারপ্রাইজ ইআরপি ইনফো ব্লক
           productTypeName: productType.slug,
           parentCategoryName: parentCategory.name,
           subCategoryName: subCategoryName,
           unitName: unit.slug,
           unitFullName: unit.name,
-
-          purchasePrice: 0,
+          costPrice: 0,
           salePrice: 0,
           stock: 0,
           status: "active",

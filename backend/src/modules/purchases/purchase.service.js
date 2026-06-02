@@ -22,471 +22,319 @@ import { ensureObjectId } from "../../utils/ensureObjectId.js";
 import { resolveSystemAccounts } from "../accounting/account.resolver.js";
 import { postJournalEntry } from "../accounting/journals/journals.service.js";
 
-/* ---------------------------------------
-  Helpers
----------------------------------------- */
-const toId = (id, label) => {
-  if (!ObjectId.isValid(id)) throw new Error(`Invalid ${label}`);
-  return new ObjectId(id);
-};
-
-/* ---------------------------------------
-  Stock Upsert (AVG Cost Safe)
----------------------------------------- */
-const resolvePrice = (item, variant) => {
-  if (item.pricingMode === "GLOBAL") {
-    return {
-      costPrice: item.globalPrice.costPrice,
-      salePrice: item.globalPrice.salePrice,
-    };
-  }
-
-  return {
-    costPrice: variant.costPrice,
-    salePrice: variant.salePrice,
-  };
-};
-
-async function upsertStock({
-  db,
-  session,
-  branchId,
-  variantId,
-  productId,
-  sku,
-  productName,
-  attributes,
-  qty,
-  salePrice,
-  costPrice,
-  searchableText,
-  refType,
-  refId,
-}) {
-  /* ======================
-     1️⃣ UPDATE STOCK SNAPSHOT (OPTIONAL CACHE)
-  ====================== */
-  const stock = await db.collection(COLLECTIONS.STOCKS).findOneAndUpdate(
-    { branchId, variantId },
-    {
-      $set: {
-        branchId,
-        variantId,
-        productId,
-        productName,
-        attributes,
-        sku,
-        searchableText,
-        salePrice,
-        updatedAt: new Date(),
-      },
-      $inc: { qty },
-    },
-    {
-      upsert: true,
-      returnDocument: "after",
-      session,
-    },
-  );
-
-  /* ======================
-     2️⃣ FIFO PURCHASE MOVEMENT (CRITICAL)
-  ====================== */
-  await db.collection(COLLECTIONS.STOCK_MOVEMENTS).insertOne(
-    {
-      branchId,
-      variantId,
-      productId,
-      type: "PURCHASE",
-      qty,
-      costPrice,
-      salePrice,
-      balanceQty: qty,
-      refType,
-      refId,
-      createdAt: new Date(),
-    },
-    { session },
-  );
-}
-
-/* ---------------------------------------
-  CREATE PURCHASE (NEW FLOW)
----------------------------------------- */
-export const createPurchase = async ({ db, body, req }) => {
+export const createPurchase = async (req, res, next) => {
+  const db = getDB();
   const session = db.client.startSession();
-  let purchaseNo = null;
+  let generatedPurchaseNo = null;
 
   try {
     session.startTransaction();
+    const payload = req.body;
 
-    /* ======================
-       BASIC CONTEXT
-    ====================== */
-    const payload = body;
-
-    for (const item of payload.items) {
-      if (!item.variants || !item.variants.length) {
-        throw new Error("Purchase item has no variants");
-      }
-
-      for (const v of item.variants) {
-        if (v.qty == null || v.qty <= 0) {
-          throw new Error(
-            `Invalid qty for product ${item.productId} (${v.size}-${v.color})`,
-          );
-        }
-
-        if (v.costPrice == null || v.costPrice <= 0) {
-          throw new Error(
-            `Invalid cost price for product ${item.productId} (${v.size}-${v.color})`,
-          );
-        }
-      }
+    if (!payload.items || !payload.items.length) {
+      throw new Error("Cannot process a purchase invoice without items.");
     }
 
-    const paidAmount = roundMoney(payload.paidAmount || 0);
+    const supplierId = ensureObjectId({
+      value: payload.supplierId,
+      field: "supplierId",
+    });
 
     const mainBranch = await getMainBranch(db, session);
     const branchId = mainBranch._id;
 
-    const supplierId = toId(payload.supplierId, "supplierId");
+    const supplierDoc = await db
+      .collection(COLLECTIONS.PARTIES)
+      .findOne({ _id: supplierId }, { projection: { name: 1 }, session });
+    if (!supplierDoc)
+      throw new Error(
+        "Referenced supplier entity not found in cloud registry.",
+      );
+    const supplierName = supplierDoc.name;
 
-    /* ======================
-       PURCHASE NO
-    ====================== */
-    purchaseNo = await generateCode({
+    generatedPurchaseNo = await generateCode({
       db,
       module: "PURCHASE",
-      prefix: "PUR",
+      prefix: "Pur",
       scope: "YEAR",
       branch: mainBranch.code,
       session,
     });
 
-    /* ======================
-       PRELOAD PRODUCTS (NO N+1)
-    ====================== */
-    const productIds = payload.items.map((i) => toId(i.productId, "productId"));
-
-    const products = await db
-      .collection(COLLECTIONS.PRODUCTS)
-      .aggregate(
-        [
-          { $match: { _id: { $in: productIds } } },
-          {
-            $lookup: {
-              from: COLLECTIONS.CATEGORIES,
-              localField: "categoryId",
-              foreignField: "_id",
-              as: "category",
-            },
-          },
-          { $unwind: "$category" },
-          {
-            $lookup: {
-              from: COLLECTIONS.CATEGORIES,
-              localField: "category.parentId",
-              foreignField: "_id",
-              as: "parentCategory",
-            },
-          },
-          { $unwind: "$parentCategory" },
-        ],
-        { session },
-      )
+    const variantIds = payload.items.map((item) =>
+      ensureObjectId({ value: item.variantId, field: "variantId" }),
+    );
+    const variantsMasterList = await db
+      .collection(COLLECTIONS.VARIANTS)
+      .find({ _id: { $in: variantIds } }, { session })
       .toArray();
 
-    const productMap = new Map(products.map((p) => [String(p._id), p]));
+    const variantMap = new Map(
+      variantsMasterList.map((v) => [v._id.toString(), v]),
+    );
 
-    /* ======================
-       TOTALS
-    ====================== */
-    const purchaseItemsForDB = [];
-    let totalQty = 0;
-    let totalAmount = 0;
-    const barcodePayload = [];
-    const stockOperations = [];
+    const purchaseId = new ObjectId();
+    let calculatedSubTotal = 0;
 
-    /* ======================
-       ITEM LOOP
-    ====================== */
+    const stockMovementsToInsert = [];
+    const serialsToInsert = [];
+    const ledgerEntries = [];
+
     for (const item of payload.items) {
-      const product = productMap.get(item.productId);
-      if (!product) throw new Error("Product not found");
+      const variantId = ensureObjectId({
+        value: item.variantId,
+        field: "variantId",
+      });
+      const productId = ensureObjectId({
+        value: item.productId,
+        field: "productId",
+      });
 
-      const dbItem = {
-        productId: product._id,
-        pricingMode: item.pricingMode,
-        ...(item.pricingMode === "GLOBAL" && {
-          globalPrice: item.globalPrice,
-        }),
-        variants: [],
-      };
+      const incomingQty = parseInt(item.qty) || 0;
+      const incomingPurchasePrice = roundMoney(
+        parseFloat(item.purchasePrice) || 0,
+      );
+      const latestSalePrice = roundMoney(parseFloat(item.salePrice) || 0);
 
-      for (const variantInput of item.variants) {
-        const { size, color, qty } = variantInput;
-        if (!qty || qty <= 0) continue;
+      if (incomingQty <= 0)
+        throw new Error(`Invalid quantity provided for SKU: ${item.sku}`);
+      if (incomingPurchasePrice < 0)
+        throw new Error(`Invalid purchase price provided for SKU: ${item.sku}`);
 
-        const { costPrice, salePrice } = resolvePrice(item, variantInput);
+      calculatedSubTotal += incomingQty * incomingPurchasePrice;
 
-        /* ======================
-       FIND VARIANT
-    ====================== */
-        let variant = await db.collection(COLLECTIONS.VARIANTS).findOne(
+      const lookupKey = item.variantId ? item.variantId.toString().trim() : "";
+      const variantMaster = variantMap.get(lookupKey);
+
+      if (!variantMaster) {
+        throw new Error(
+          `The product variant item (ID: ${lookupKey}) was not found in the inventory registry. Please re-select the product.`,
+        );
+      }
+
+      const variantTitle = variantMaster.title;
+      const variantModel = variantMaster.model || "";
+      const warrantyName = variantMaster.warrantyName || "No Warranty";
+
+      const payloadTypeName = item.productTypeName || "";
+      const dbTypeName = variantMaster.productTypeName || "";
+      const isSerialProduct =
+        payloadTypeName.toLowerCase().includes("serial") ||
+        dbTypeName.toLowerCase().includes("serial");
+
+      const productTypeName = isSerialProduct
+        ? "serial-product"
+        : "non-serial-product";
+      const unitName = variantMaster.unitName || "pcs";
+
+      const costPriceChanged =
+        variantMaster.costPrice !== incomingPurchasePrice;
+      const salePriceChanged = variantMaster.salePrice !== latestSalePrice;
+
+      if (costPriceChanged || salePriceChanged) {
+        const historyPayload = {
+          oldCostPrice: variantMaster.costPrice || 0,
+          newCostPrice: incomingPurchasePrice,
+          oldSalePrice: variantMaster.salePrice || 0,
+          newSalePrice: latestSalePrice,
+          source: "PURCHASE",
+          referenceNo: generatedPurchaseNo,
+          purchaseId,
+          date: new Date(),
+        };
+
+        await db.collection(COLLECTIONS.VARIANTS).updateOne(
+          { _id: variantId },
           {
-            productId: product._id,
-            "attributes.size": size,
-            "attributes.color": color,
-            status: "active",
+            $set: {
+              costPrice: incomingPurchasePrice,
+              salePrice: latestSalePrice,
+              updatedAt: new Date(),
+            },
+            $push: { priceHistory: historyPayload },
           },
           { session },
         );
+      }
 
-        /* ======================
-       CREATE VARIANT
-    ====================== */
-        if (!variant) {
-          const sku = await generateVariantSKU({
-            db,
-            productId: product._id,
-            productCode: product.productCode,
-            session,
-          });
+      const stocksSearchableText = `${variantTitle} ${variantModel} ${item.sku}`
+        .replace(/\s+/g, " ")
+        .trim();
 
-          const insert = await db.collection(COLLECTIONS.VARIANTS).insertOne(
-            {
-              productId: product._id,
-              sku,
-              attributes: { size, color },
-              costPrice,
-              salePrice,
-              priceHistory: [],
-              status: "active",
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
+      await db.collection(COLLECTIONS.STOCKS).updateOne(
+        { branchId, variantId },
+        {
+          $set: {
+            branchId,
+            variantId,
+            productId,
+            sku: item.sku,
+            productTypeName,
+            salePrice: latestSalePrice,
+            warrantyName,
+            supplierId,
+            supplierName,
+            unitName,
+            searchableText: stocksSearchableText,
+            updatedAt: new Date(),
+          },
+          $inc: { qty: incomingQty },
+        },
+        { upsert: true, session },
+      );
+
+      stockMovementsToInsert.push({
+        branchId,
+        variantId,
+        productId,
+        type: "STOCK_IN",
+        qty: incomingQty,
+        balanceQty: incomingQty,
+        purchasePrice: incomingPurchasePrice,
+        salePrice: latestSalePrice,
+        source: "Purchase",
+        refType: "PURCHASES",
+        refId: purchaseId,
+        referenceNo: generatedPurchaseNo,
+        createdAt: new Date(),
+      });
+
+      if (isSerialProduct && item.serials && item.serials.length > 0) {
+        const cleanedSerials = item.serials.map((s) =>
+          s.toString().trim().toUpperCase(),
+        );
+
+        const duplicateSerialCheck = await db
+          .collection(COLLECTIONS.PRODUCT_SERIALS)
+          .findOne(
+            { serialNumber: { $in: cleanedSerials }, status: "In-Stock" },
             { session },
           );
-
-          variant = {
-            _id: insert.insertedId,
-            sku,
-            attributes: { size, color },
-            costPrice,
-            salePrice,
-          };
-        } else {
-          /* ======================
-         UPDATE VARIANT PRICES
-      ====================== */
-          const costChanged = variant.costPrice !== costPrice;
-          const saleChanged = variant.salePrice !== salePrice;
-
-          if (costChanged || saleChanged) {
-            const update = {
-              costPrice, // ✅ ALWAYS overwrite
-              salePrice,
-              updatedAt: new Date(),
-            };
-
-            const history = [];
-
-            if (saleChanged) {
-              history.push({
-                oldPrice: variant.salePrice,
-                newPrice: salePrice,
-                source: "PURCHASE",
-                refType: "PURCHASE",
-                refId: purchaseNo,
-                date: new Date(),
-              });
-            }
-
-            await db.collection(COLLECTIONS.VARIANTS).updateOne(
-              { _id: variant._id },
-              {
-                $set: update,
-                ...(history.length && {
-                  $push: { priceHistory: { $each: history } },
-                }),
-              },
-              { session },
-            );
-          }
+        if (duplicateSerialCheck) {
+          throw new Error(
+            `Fraud Trap! Serial '${duplicateSerialCheck.serialNumber}' already exists inside In-Stock inventory.`,
+          );
         }
 
-        /* ======================
-       STOCK UPSERT
-    ====================== */
-        // await upsertStock({
-        //   db,
-        //   session,
-        //   branchId,
-        //   variantId: variant._id,
-        //   productId: product._id,
-        //   productName: product.name,
-        //   attributes: { size, color },
-        //   sku: variant.sku,
-        //   qty,
-        //   costPrice,
-        //   salePrice,
-        //   searchableText: `${product.name} ${product.productCode} ${variant.sku} ${size} ${color}`,
-        // });
+        cleanedSerials.forEach((serialNumber) => {
+          const serialSearchableText =
+            `${variantTitle} ${variantModel} ${item.sku} ${serialNumber}`
+              .replace(/\s+/g, " ")
+              .trim();
 
-        stockOperations.push({
-          variantId: variant._id,
-          productId: product._id,
-          productName: product.name,
-          attributes: { size, color },
-          sku: variant.sku,
-          qty,
-          costPrice,
-          salePrice,
-          searchableText: `${product.name} ${product.productCode} ${variant.sku} ${size} ${color}`,
-        });
-
-        /* ======================
-       BARCODE (PER UNIT)
-    ====================== */
-        for (let i = 0; i < qty; i++) {
-          barcodePayload.push({
-            productName: product.name,
-            sku: variant.sku,
-            parentCategory: product.parentCategory.name,
-            subCategory: product.category.name,
-            salesPrice: salePrice,
-            attribute: { size, color },
+          serialsToInsert.push({
+            serialNumber,
+            productId,
+            variantId,
+            purchaseId,
+            supplierId,
+            branchId,
+            purchaseDate: payload.purchaseDate
+              ? new Date(payload.purchaseDate)
+              : new Date(),
+            status: "In-Stock",
+            salePrice: latestSalePrice,
+            warrantyName,
+            searchableText: serialSearchableText,
+            salesInvoiceNo: null,
+            warrantyExpiry: null,
+            createdAt: new Date(),
           });
-        }
-
-        /* ======================
-       PURCHASE ITEM SNAPSHOT
-    ====================== */
-        dbItem.variants.push({
-          variantId: variant._id,
-          qty,
-          costPrice,
-          salePrice,
         });
-
-        totalQty += qty;
-        totalAmount += qty * costPrice;
-      }
-
-      if (dbItem.variants.length) {
-        purchaseItemsForDB.push(dbItem);
       }
     }
 
-    totalAmount = roundMoney(totalAmount);
-    const dueAmount = roundMoney(Math.max(totalAmount - paidAmount, 0));
+    const shippingCost = roundMoney(parseFloat(payload.shippingCost) || 0);
+    const grandTotal = roundMoney(calculatedSubTotal + shippingCost);
+    const paidAmount = roundMoney(
+      parseFloat(payload.paymentInfo?.paidAmount) || 0,
+    );
+    const dueAmount = roundMoney(Math.max(grandTotal - paidAmount, 0));
 
     const paymentStatus =
-      dueAmount === 0 ? "PAID" : paidAmount > 0 ? "PARTIAL" : "DUE";
+      dueAmount === 0 ? "Paid" : paidAmount > 0 ? "Partial" : "Due";
 
-    /* ======================
-       PURCHASE INSERT
-    ====================== */
-    const insertResult = await db.collection(COLLECTIONS.PURCHASES).insertOne(
-      {
-        purchaseNo,
-        supplierId,
-        branchId,
-        invoiceNumber: payload.invoiceNumber,
-        invoiceDate: payload.invoiceDate,
-        items: purchaseItemsForDB,
-        totalQty,
-        totalAmount,
-        paidAmount,
-        dueAmount,
-        paymentStatus,
-        notes: payload.notes || null,
-        createdAt: new Date(),
-      },
-      { session },
-    );
-
-    for (const stock of stockOperations) {
-      await upsertStock({
-        db,
-        session,
-        branchId,
-        ...stock,
-        refType: "PURCHASE",
-        refId: insertResult.insertedId, // ✅ real reference
-      });
+    if (stockMovementsToInsert.length > 0) {
+      await db
+        .collection(COLLECTIONS.STOCK_MOVEMENTS)
+        .insertMany(stockMovementsToInsert, { session });
+    }
+    if (serialsToInsert.length > 0) {
+      await db
+        .collection(COLLECTIONS.PRODUCT_SERIALS)
+        .insertMany(serialsToInsert, { session });
     }
 
-    /* ======================
-       ACCOUNTING
-    ====================== */
-    await purchaseAccounting({
-      db,
-      session,
-      purchaseId: insertResult.insertedId,
-      totalAmount,
-      cashPaid: paidAmount,
-      dueAmount,
+    const purchaseMasterDocument = {
+      _id: purchaseId,
+      purchaseNo: generatedPurchaseNo,
+      invoiceNo: payload.invoiceNo,
+      subject: payload.subject || "",
+      purchaseDate: payload.purchaseDate
+        ? new Date(payload.purchaseDate)
+        : new Date(),
       supplierId,
       branchId,
-      narration: `Purchase #${purchaseNo}`,
-    });
+      shippingCost,
+      items: payload.items.map((i) => ({
+        productId: ensureObjectId({ value: i.productId, field: "productId" }),
+        variantId: ensureObjectId({ value: i.variantId, field: "variantId" }),
+        sku: i.sku,
+        qty: parseInt(i.qty),
+        purchasePrice: roundMoney(parseFloat(i.purchasePrice) || 0),
+        salePrice: roundMoney(parseFloat(i.salePrice) || 0),
+        serials: i.serials || [],
+      })),
+      paymentInfo: {
+        subTotal: calculatedSubTotal,
+        grandTotal,
+        paidAmount,
+        dueAmount,
+        status: paymentStatus,
+      },
+      notes: payload.notes?.trim() || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    await db
+      .collection(COLLECTIONS.PURCHASES)
+      .insertOne(purchaseMasterDocument, { session });
 
-    /* ======================
-       AUDIT LOG
-    ====================== */
     await writeAuditLog({
       db,
       session,
-      userId: toId(req?.user?._id, "userId"),
-      action: "PURCHASE_CREATE",
+      userId: req?.user?._id
+        ? ensureObjectId({ value: req.user._id, field: "userId" })
+        : null,
+      action: "PURCHASE_CREATE_SUCCESS",
       collection: COLLECTIONS.PURCHASES,
-      documentId: insertResult.insertedId,
-      refType: "PURCHASE",
-      refId: insertResult.insertedId,
+      documentId: purchaseId,
       payload: {
-        purchaseNo,
-        totalQty,
-        totalAmount,
+        invoiceNo: generatedPurchaseNo,
+        grandTotal,
         paidAmount,
         dueAmount,
+        status: paymentStatus,
       },
-      ipAddress: req?.ip,
-      userAgent: req?.headers?.["user-agent"],
       status: "SUCCESS",
     });
 
     await session.commitTransaction();
 
-    return {
-      purchaseNo,
-      branch: mainBranch.code,
-      totalQty,
-      totalAmount,
-      paidAmount,
-      dueAmount,
-      barcodes: barcodePayload,
-    };
+    return res.status(201).json({
+      success: true,
+      message:
+        "Purchase executed on Main Branch with 100% price ledger history and dynamic note locking.",
+      data: {
+        purchaseId,
+        invoiceNo: generatedPurchaseNo,
+        grandTotal,
+        paymentStatus,
+      },
+    });
   } catch (error) {
     await session.abortTransaction();
-
-    await writeAuditLog({
-      db,
-      session,
-      userId: toId(req?.user?._id, "userId"),
-      action: "PURCHASE_CREATE_FAILED",
-      collection: COLLECTIONS.PURCHASES,
-      payload: {
-        purchaseNo,
-        error: error.message,
-      },
-      ipAddress: req?.ip,
-      userAgent: req?.headers?.["user-agent"],
-      status: "FAILED",
-    });
-
-    throw error;
+    return res.status(500).json({ success: false, message: error.message });
   } finally {
     await session.endSession();
   }
@@ -517,7 +365,7 @@ export const getAllPurchases = async (req, res, next) => {
       limit,
       lookups: [
         {
-          from: COLLECTIONS.SUPPLIERS,
+          from: COLLECTIONS.PARTIES,
           localField: "supplierId",
           foreignField: "_id",
           as: "supplier",
@@ -724,10 +572,9 @@ export const createSupplierPayment = async ({ body, req }) => {
     /* =========================
        LOAD PURCHASE (LOCK SAFE)
     ========================== */
-    const purchase = await db.collection("purchases").findOne(
-      { _id: toId(purchaseId) },
-      { session }
-    );
+    const purchase = await db
+      .collection("purchases")
+      .findOne({ _id: toId(purchaseId) }, { session });
 
     if (!purchase) throw new Error("Purchase not found");
 
@@ -737,8 +584,7 @@ export const createSupplierPayment = async ({ body, req }) => {
     if (purchase.paymentStatus === "PAID")
       throw new Error("This purchase is already fully paid");
 
-    if (purchase.dueAmount <= 0)
-      throw new Error("No due amount remaining");
+    if (purchase.dueAmount <= 0) throw new Error("No due amount remaining");
 
     if (numericAmount > purchase.dueAmount)
       throw new Error("Payment exceeds remaining due");
@@ -746,30 +592,26 @@ export const createSupplierPayment = async ({ body, req }) => {
     /* =========================
        VALIDATE PAYMENT ACCOUNT
     ========================== */
-    const paymentAccount = await db.collection("accounts").findOne(
-      { _id: toId(paymentAccountId), status: "ACTIVE" },
-      { session }
-    );
+    const paymentAccount = await db
+      .collection("accounts")
+      .findOne({ _id: toId(paymentAccountId), status: "ACTIVE" }, { session });
 
-    if (!paymentAccount)
-      throw new Error("Invalid or inactive payment account");
+    if (!paymentAccount) throw new Error("Invalid or inactive payment account");
 
     /* =========================
        SAFE RECALCULATION
     ========================== */
     const updatedPaidAmount = roundMoney(
-      (purchase.paidAmount || 0) + numericAmount
+      (purchase.paidAmount || 0) + numericAmount,
     );
 
     const updatedDueAmount = roundMoney(
-      purchase.totalAmount - updatedPaidAmount
+      purchase.totalAmount - updatedPaidAmount,
     );
 
-    if (updatedDueAmount < 0)
-      throw new Error("Payment calculation error");
+    if (updatedDueAmount < 0) throw new Error("Payment calculation error");
 
-    const paymentStatus =
-      updatedDueAmount === 0 ? "PAID" : "PARTIAL";
+    const paymentStatus = updatedDueAmount === 0 ? "PAID" : "PARTIAL";
 
     /* =========================
        UPDATE PURCHASE
@@ -777,7 +619,7 @@ export const createSupplierPayment = async ({ body, req }) => {
     const updateResult = await db.collection("purchases").updateOne(
       {
         _id: purchase._id,
-        dueAmount: purchase.dueAmount, 
+        dueAmount: purchase.dueAmount,
       },
       {
         $set: {
@@ -796,7 +638,7 @@ export const createSupplierPayment = async ({ body, req }) => {
           },
         },
       },
-      { session }
+      { session },
     );
 
     if (updateResult.modifiedCount !== 1)
@@ -820,7 +662,7 @@ export const createSupplierPayment = async ({ body, req }) => {
         createdAt: new Date(),
         createdBy: toId(req.user._id),
       },
-      { session }
+      { session },
     );
 
     /* =========================
@@ -880,7 +722,6 @@ export const createSupplierPayment = async ({ body, req }) => {
       remainingDue: updatedDueAmount,
       paymentStatus,
     };
-
   } catch (error) {
     await session.abortTransaction();
     throw error;

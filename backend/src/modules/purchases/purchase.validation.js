@@ -1,70 +1,61 @@
 import Joi from "joi";
 
-const variantSchema = Joi.object({
-  size: Joi.string().trim().required(),
-  color: Joi.string().trim().required(),
+const objectIdPattern = /^[0-9a-fA-F]{24}$/;
 
-  qty: Joi.number()
-    .integer()
-    .min(1)
-    .required(),
-
-  costPrice: Joi.number().positive().optional(),
-  salePrice: Joi.number().positive().optional(),
-});
-const purchaseItemSchema = Joi.object({
-  productId: Joi.string().required(),
-
-  pricingMode: Joi.string()
-    .valid("GLOBAL", "VARIANT")
-    .required(),
-
-  globalPrice: Joi.when("pricingMode", {
-    is: "GLOBAL",
-    then: Joi.object({
-      costPrice: Joi.number().positive().required(),
-      salePrice: Joi.number().positive().required(),
-    }).required(),
-    otherwise: Joi.forbidden(),
+export const purchaseCreateSchema = Joi.object({
+  invoiceNo: Joi.string().trim().required().messages({
+    "string.empty": "Invoice Number cannot be empty.",
+    "any.required": "Invoice Number is required for stock tracking."
   }),
-
-  variants: Joi.array()
-    .items(
-      Joi.when("pricingMode", {
-        is: "VARIANT",
-        then: variantSchema.keys({
-          costPrice: Joi.number().positive().required(),
-          salePrice: Joi.number().positive().required(),
+  subject: Joi.string().trim().allow("").default(""),
+  purchaseDate: Joi.string().isoDate().required().messages({
+    "string.isoDate": "Purchase Date must be a valid ISO Date (YYYY-MM-DD)."
+  }),
+  supplierId: Joi.string().regex(objectIdPattern).required().messages({
+    "string.pattern.base": "Supplier ID must be a valid 24-character hex MongoDB ObjectId."
+  }),
+  shippingCost: Joi.number().min(0).default(0),
+  notes: Joi.string().trim().allow(null, ""),
+  
+  paymentInfo: Joi.object({
+    subTotal: Joi.number().min(0).required(),
+    grandTotal: Joi.number().min(0).required(),
+    paidAmount: Joi.number().min(0).required(),
+    dueAmount: Joi.number().min(0).required(),
+    status: Joi.string().valid("Paid", "Partial", "Unpaid", "Due").optional(),
+    
+    // ফিক্সড: .className() মেথডটি রিমুভ করা হয়েছে
+    splitPayments: Joi.array().items(
+      Joi.object({
+        accountId: Joi.string().regex(objectIdPattern).required().messages({
+          "string.pattern.base": "Split Account ID must be a valid ObjectId."
         }),
-        otherwise: variantSchema,
+        amount: Joi.number().min(0).required().messages({
+          "number.min": "Split paid amount cannot be negative."
+        }),
+        method: Joi.string().required(),
+        reference: Joi.string().trim().allow("", null),
+        raw: Joi.object().optional()
+      })
+    ).default([]) 
+  }).required(),
+
+  items: Joi.array().items(
+    Joi.object({
+      productId: Joi.string().regex(objectIdPattern).required(),
+      variantId: Joi.string().regex(objectIdPattern).required(),
+      sku: Joi.string().trim().required(),
+      qty: Joi.number().integer().positive().required().messages({
+        "number.positive": "Quantity must be at least 1 piece."
       }),
-    )
-    .min(1)
-    .required(),
-});
-export const createPurchaseSchema = Joi.object({
-  /* ======================
-     BASIC INFO
-  ====================== */
-  supplierId: Joi.string().required(),
-
-  invoiceNumber: Joi.string().trim().required(),
-  invoiceDate: Joi.date().required(),
-
-  paidAmount: Joi.number().min(0).default(0),
-
-  /* ======================
-     ITEMS
-  ====================== */
-  items: Joi.array()
-    .items(purchaseItemSchema)
-    .min(1)
-    .required(),
-
-  /* ======================
-     OPTIONAL
-  ====================== */
-  notes: Joi.string().allow("", null).optional(),
+      purchasePrice: Joi.number().min(0).required(),
+      salePrice: Joi.number().min(0).required(),
+      productTypeName: Joi.string().trim().allow("", null).optional(), 
+      serials: Joi.array().items(Joi.string().trim().uppercase()).default([])
+    })
+  ).min(1).required().messages({
+    "array.min": "At least one variant item must be added to build a purchase voucher."
+  })
 });
 
 export const createPurchaseReturnSchema = Joi.object({
