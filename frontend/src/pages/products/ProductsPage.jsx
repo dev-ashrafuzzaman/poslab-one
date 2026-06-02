@@ -57,7 +57,7 @@ const ProductsPage = () => {
               </span>
             ),
           },
-          { key: "createdAt", label: "Created At" },
+          // { key: "createdAt", label: "Created At" },
         ]}
         actions={[
           { type: "edit", label: "Edit" },

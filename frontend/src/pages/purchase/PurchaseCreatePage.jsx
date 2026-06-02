@@ -11,7 +11,7 @@ import PurchaseFinancialSummary from "./components/PurchaseFinancialSummary";
 import FinancialPaymentGate from "../../components/common/FinancialPaymentGate";
 
 export default function PurchaseCreatePage() {
-  const { request, refetch } = useApi();
+  const { request } = useApi();
   const [loading, setLoading] = useState(false);
 
   const {
@@ -29,7 +29,7 @@ export default function PurchaseCreatePage() {
       subject: "",
       purchaseDate: new Date().toISOString().split("T")[0],
       supplier: null,
-      shippingCost: "", 
+      shippingCost: "",
       items: [],
     },
   });
@@ -193,18 +193,26 @@ export default function PurchaseCreatePage() {
         isNaN(rawCostShippingValue) || rawCostShippingValue < 0
           ? 0
           : rawCostShippingValue,
+      // PurchaseCreatePage.jsx -> onSubmit ফাংশনের ভেতরের payload অবজেক্ট
       paymentInfo: {
         subTotal: financialSummary.subTotal,
         grandTotal: financialSummary.grandTotal,
-        paidAmount: paymentHook.paidAmount,
-        dueAmount: paymentHook.remaining,
+        paidAmount: parseFloat(paymentHook.paidAmount) || 0, // সেফ কনভার্সন
+        dueAmount: parseFloat(paymentHook.remaining) || 0, // সেফ কনভার্সন
         status:
           paymentHook.remaining === 0
             ? "Paid"
             : paymentHook.paidAmount > 0
               ? "Partial"
               : "Unpaid",
-        splitPayments: paymentHook.payments,
+
+        // 💎 ফিক্সড লজিক: splitPayments এর ভেতরের amount অবশ্যই Number হতে হবে
+        splitPayments: (paymentHook.payments || []).map((p) => ({
+          accountId: p.accountId,
+          amount: parseFloat(p.amount) || 0, // 👈 এখানে স্ট্রিং কে নাম্বারে রূপান্তর করা হলো
+          method: p.method,
+          reference: p.reference?.trim() || "",
+        })),
       },
       items: data.items.map((i) => ({
         productId: i.productId,
@@ -213,6 +221,7 @@ export default function PurchaseCreatePage() {
         qty: parseInt(i.qty),
         purchasePrice: Math.max(0, parseFloat(i.purchasePrice) || 0),
         salePrice: Math.max(0, parseFloat(i.salePrice) || 0),
+        productTypeName: i.productTypeName,
         serials:
           i.productTypeName === "serial-product"
             ? i.serials.map((s) => s.toString().trim().toUpperCase())
@@ -225,7 +234,13 @@ export default function PurchaseCreatePage() {
         "Submitting validated ERP Master Voucher Blueprint:",
         payload,
       );
-      // Execute General API ledger posting request pipelines smoothly
+      await request("/purchases", "POST", payload, {
+        successMessage:
+          "Purchase invoice created successfully. Inventory levels updated. Financial ledger entries posted.",
+        onSuccess: () => {
+          reset();
+        },
+      });
     } catch (err) {
       toast.error(
         err?.message ||

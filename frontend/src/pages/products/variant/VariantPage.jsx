@@ -111,36 +111,11 @@ const VariantPage = () => {
                   ৳ {Number(r?.salePrice || 0).toLocaleString("en-IN")}/-
                 </span>
                 <span className="text-[11px] font-medium text-slate-400 mt-0.5">
-                  Cost: {Number(r?.purchasePrice || 0).toLocaleString("en-IN")}
+                  Cost: {Number(r?.costPrice || 0).toLocaleString("en-IN")}
                 </span>
               </div>
             ),
           },
-          {
-            key: "stock",
-            label: "Stock Level",
-            render: (r) => {
-              const currentStock = r.stock || 0;
-              const unitLabel = r.unitName || "Units";
-
-              return (
-                <div className="text-center py-1">
-                  <span
-                    className={`inline-block px-3 py-1 text-xs font-bold rounded-full min-w-18.75 shadow-sm tracking-wide ${
-                      currentStock > 5
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                        : currentStock > 0
-                          ? "bg-amber-50 text-amber-700 border border-amber-200"
-                          : "bg-rose-50 text-rose-600 border border-rose-100"
-                    }`}
-                  >
-                    {currentStock} {unitLabel}
-                  </span>
-                </div>
-              );
-            },
-          },
-
           {
             key: "createdAt",
             label: "Registered",
