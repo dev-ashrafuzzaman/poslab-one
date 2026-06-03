@@ -15,6 +15,7 @@ export const purchaseCreateSchema = Joi.object({
     "string.pattern.base": "Supplier ID must be a valid 24-character hex MongoDB ObjectId."
   }),
   shippingCost: Joi.number().min(0).default(0),
+  bankCharge: Joi.number().min(0).default(0),
   notes: Joi.string().trim().allow(null, ""),
   
   paymentInfo: Joi.object({
@@ -24,7 +25,6 @@ export const purchaseCreateSchema = Joi.object({
     dueAmount: Joi.number().min(0).required(),
     status: Joi.string().valid("Paid", "Partial", "Unpaid", "Due").optional(),
     
-    // ফিক্সড: .className() মেথডটি রিমুভ করা হয়েছে
     splitPayments: Joi.array().items(
       Joi.object({
         accountId: Joi.string().regex(objectIdPattern).required().messages({

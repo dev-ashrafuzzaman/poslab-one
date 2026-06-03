@@ -17,12 +17,11 @@ export const createProductSchema = Joi.object({
   warrantyId: Joi.string().regex(objectIdPattern).allow(null, ""),
   status: Joi.string().valid("active", "inactive").default("active"),
 
-  // 💡 🚀 সুনির্দিষ্ট ফিক্সড কলাম আর্কিটেকচার (জেআই আর ডুপ্লিকেট এরর দেবে না)
   variants: Joi.array()
     .items(
       Joi.object({
         attributeName: Joi.string().trim().required(),
-        attributeValue: Joi.string().trim().required(), // একই ভ্যালু একাধিকবার এন্ট্রি করার অনুমতি দেওয়া হলো
+        attributeValue: Joi.string().trim().required(),
         model: Joi.string().trim().max(100).allow(null, ""),
         barcode: Joi.string().trim().max(100).allow(null, ""),
         warrantyId: Joi.string().regex(objectIdPattern).allow(null, ""),

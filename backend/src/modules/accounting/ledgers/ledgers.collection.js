@@ -6,21 +6,16 @@ export const insertLedger = async (db, payload) => {
   const doc = {
     accountId: new ObjectId(payload.accountId),
     branchId: payload.branchId ? new ObjectId(payload.branchId) : null,
-
-    debit: payload.debit || 0,
-    credit: payload.credit || 0,
-    balance: payload.balance,
-
+    debit: parseFloat(payload.debit || 0),
+    credit: parseFloat(payload.credit || 0),
+    balance: parseFloat(payload.balance || 0),
     refType: payload.refType,
     refId: payload.refId ? new ObjectId(payload.refId) : null,
-    narration: payload.narration,
-
+    narration: payload.narration?.trim() || "",
     partyType: payload.partyType || null,
     partyId: payload.partyId ? new ObjectId(payload.partyId) : null,
-
     journalId: payload.journalId ? new ObjectId(payload.journalId) : null,
-
-    date: payload.date,
+    date: payload.date ? new Date(payload.date) : new Date(),
     voucherNo: payload.voucherNo,
     createdAt: new Date(),
   };

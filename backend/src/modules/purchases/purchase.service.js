@@ -21,6 +21,7 @@ import { getDB } from "../../config/db.js";
 import { ensureObjectId } from "../../utils/ensureObjectId.js";
 import { resolveSystemAccounts } from "../accounting/account.resolver.js";
 import { postJournalEntry } from "../accounting/journals/journals.service.js";
+import { processPurchaseInvoiceAccounting } from "./purchase.accounting.js";
 
 export const createPurchase = async (req, res, next) => {
   const db = getDB();
@@ -128,13 +129,13 @@ export const createPurchase = async (req, res, next) => {
       const unitName = variantMaster.unitName || "pcs";
 
       const costPriceChanged =
-        variantMaster.costPrice !== incomingPurchasePrice;
+        variantMaster.purchasePrice !== incomingPurchasePrice;
       const salePriceChanged = variantMaster.salePrice !== latestSalePrice;
 
       if (costPriceChanged || salePriceChanged) {
         const historyPayload = {
-          oldCostPrice: variantMaster.costPrice || 0,
-          newCostPrice: incomingPurchasePrice,
+          oldPurchasePrice: variantMaster.purchasePrice || 0,
+          newPurchasePrice: incomingPurchasePrice,
           oldSalePrice: variantMaster.salePrice || 0,
           newSalePrice: latestSalePrice,
           source: "PURCHASE",
@@ -147,7 +148,7 @@ export const createPurchase = async (req, res, next) => {
           { _id: variantId },
           {
             $set: {
-              costPrice: incomingPurchasePrice,
+              purchasePrice: incomingPurchasePrice,
               salePrice: latestSalePrice,
               updatedAt: new Date(),
             },
@@ -245,7 +246,13 @@ export const createPurchase = async (req, res, next) => {
     }
 
     const shippingCost = roundMoney(parseFloat(payload.shippingCost) || 0);
-    const grandTotal = roundMoney(calculatedSubTotal + shippingCost);
+    const bankCharge = roundMoney(
+      parseFloat(payload.bankCharge) || 0,
+    );
+    console.log(payload.bankCharge)
+    const grandTotal = roundMoney(
+      calculatedSubTotal + shippingCost + bankCharge,
+    );
     const paidAmount = roundMoney(
       parseFloat(payload.paymentInfo?.paidAmount) || 0,
     );
@@ -264,6 +271,21 @@ export const createPurchase = async (req, res, next) => {
         .collection(COLLECTIONS.PRODUCT_SERIALS)
         .insertMany(serialsToInsert, { session });
     }
+
+    await processPurchaseInvoiceAccounting({
+      db,
+      session,
+      purchaseId: purchaseId,
+      invoiceNo: payload.invoiceNo,
+      calculatedSubTotal: calculatedSubTotal,
+      shippingCost: shippingCost,
+      bankCharge: bankCharge,
+      splitPayments: payload.paymentInfo.splitPayments,
+      partyId: supplierId,
+      partyType: "supplier",
+      branchId: payload.branchId || null,
+      narration: `Procurement Tracking Invoice: ${payload.invoiceNo} (SubTotal: ${calculatedSubTotal} | Shipping: ${shippingCost} | BankCharge: ${bankCharge})`,
+    });
 
     const purchaseMasterDocument = {
       _id: purchaseId,
@@ -480,7 +502,7 @@ export const getSinglePurchaseInvoice = async (req, res, next) => {
             calculatedTotalQty: { $sum: "$items.variants.qty" },
             calculatedTotalAmount: {
               $sum: {
-                $multiply: ["$items.variants.qty", "$items.variants.costPrice"],
+                $multiply: ["$items.variants.qty", "$items.variants.purchasePrice"],
               },
             },
 
@@ -492,13 +514,13 @@ export const getSinglePurchaseInvoice = async (req, res, next) => {
                 productName: "$product.name",
 
                 qty: "$items.variants.qty",
-                costPrice: "$items.variants.costPrice",
+                purchasePrice: "$items.variants.purchasePrice",
                 salePrice: "$items.variants.salePrice",
 
                 lineTotal: {
                   $multiply: [
                     "$items.variants.qty",
-                    "$items.variants.costPrice",
+                    "$items.variants.purchasePrice",
                   ],
                 },
               },
@@ -810,7 +832,7 @@ export const createPurchaseReturn = async ({ db, body, req }) => {
 
           type: "PURCHASE_RETURN",
           qty: -item.qty,
-          costPrice: purchaseItem.costPrice,
+          purchasePrice: purchaseItem.purchasePrice,
           salePrice: purchaseItem.salePrice || null,
 
           balanceQty: newBalanceQty,
@@ -824,7 +846,7 @@ export const createPurchaseReturn = async ({ db, body, req }) => {
       );
 
       totalQty += item.qty;
-      totalAmount += item.qty * purchaseItem.costPrice;
+      totalAmount += item.qty * purchaseItem.purchasePrice;
     }
 
     totalAmount = roundMoney(totalAmount);
