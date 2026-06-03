@@ -30,6 +30,7 @@ export default function PurchaseCreatePage() {
       purchaseDate: new Date().toISOString().split("T")[0],
       supplier: null,
       shippingCost: "",
+      bankCharge: "", 
       items: [],
     },
   });
@@ -45,6 +46,7 @@ export default function PurchaseCreatePage() {
 
   const watchedItems = useWatch({ control, name: "items", defaultValue: [] });
   const watchedShippingCost = watch("shippingCost");
+  const watchedBankCharge = watch("bankCharge"); 
 
   const financialSummary = useMemo(() => {
     const subTotal = watchedItems.reduce((acc, curr) => {
@@ -54,12 +56,15 @@ export default function PurchaseCreatePage() {
     }, 0);
 
     const parseShipping = parseFloat(watchedShippingCost);
-    const shipping =
-      isNaN(parseShipping) || parseShipping < 0 ? 0 : parseShipping;
-    const grandTotal = subTotal + shipping;
+    const shipping = isNaN(parseShipping) || parseShipping < 0 ? 0 : parseShipping;
 
-    return { subTotal, grandTotal };
-  }, [watchedItems, watchedShippingCost]);
+    const parseBankCharge = parseFloat(watchedBankCharge);
+    const bankCharge = isNaN(parseBankCharge) || parseBankCharge < 0 ? 0 : parseBankCharge;
+
+    const grandTotal = subTotal + shipping + bankCharge;
+
+    return { subTotal, shipping, bankCharge, grandTotal };
+  }, [watchedItems, watchedShippingCost, watchedBankCharge]);
 
   const paymentHook = useFinancialPayment(financialSummary.grandTotal, {
     allowChange: false,
@@ -183,33 +188,29 @@ export default function PurchaseCreatePage() {
 
     setLoading(true);
     const rawCostShippingValue = parseFloat(data.shippingCost);
+    const rawBankChargeValue = parseFloat(data.bankCharge);
 
     const payload = {
       invoiceNo: data.invoiceNo.trim(),
       subject: data.subject?.trim() || "",
       purchaseDate: data.purchaseDate,
       supplierId: data.supplier._id,
-      shippingCost:
-        isNaN(rawCostShippingValue) || rawCostShippingValue < 0
-          ? 0
-          : rawCostShippingValue,
-      // PurchaseCreatePage.jsx -> onSubmit ফাংশনের ভেতরের payload অবজেক্ট
+      shippingCost: isNaN(rawCostShippingValue) || rawCostShippingValue < 0 ? 0 : rawCostShippingValue,
+      bankCharge: isNaN(rawBankChargeValue) || rawBankChargeValue < 0 ? 0 : rawBankChargeValue, 
       paymentInfo: {
         subTotal: financialSummary.subTotal,
         grandTotal: financialSummary.grandTotal,
-        paidAmount: parseFloat(paymentHook.paidAmount) || 0, // সেফ কনভার্সন
-        dueAmount: parseFloat(paymentHook.remaining) || 0, // সেফ কনভার্সন
+        paidAmount: parseFloat(paymentHook.paidAmount) || 0,
+        dueAmount: parseFloat(paymentHook.remaining) || 0,
         status:
           paymentHook.remaining === 0
             ? "Paid"
             : paymentHook.paidAmount > 0
               ? "Partial"
               : "Unpaid",
-
-        // 💎 ফিক্সড লজিক: splitPayments এর ভেতরের amount অবশ্যই Number হতে হবে
         splitPayments: (paymentHook.payments || []).map((p) => ({
           accountId: p.accountId,
-          amount: parseFloat(p.amount) || 0, // 👈 এখানে স্ট্রিং কে নাম্বারে রূপান্তর করা হলো
+          amount: parseFloat(p.amount) || 0,
           method: p.method,
           reference: p.reference?.trim() || "",
         })),
@@ -230,10 +231,7 @@ export default function PurchaseCreatePage() {
     };
 
     try {
-      console.log(
-        "Submitting validated ERP Master Voucher Blueprint:",
-        payload,
-      );
+      console.log("Submitting validated ERP Master Voucher Blueprint:", payload);
       await request("/purchases", "POST", payload, {
         successMessage:
           "Purchase invoice created successfully. Inventory levels updated. Financial ledger entries posted.",
@@ -260,8 +258,7 @@ export default function PurchaseCreatePage() {
             Invoice Worksheet
           </h1>
           <p className="text-xs text-gray-500 mt-0.5">
-            Moving Average Valuation Engine & Automated Financial Ledger System
-            Integration.
+            Moving Average Valuation Engine & Automated Financial Ledger System Integration.
           </p>
         </div>
       </div>
@@ -299,6 +296,7 @@ export default function PurchaseCreatePage() {
             paymentHook={paymentHook}
             loading={loading}
             reset={reset}
+            register={register}
           />
         </div>
       </form>

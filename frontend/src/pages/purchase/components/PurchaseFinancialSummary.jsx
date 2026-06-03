@@ -6,6 +6,7 @@ export default function PurchaseFinancialSummary({
   paymentHook,
   loading,
   reset,
+  register,
 }) {
   return (
     <div className="bg-white border-2 border-gray-200 rounded-xl p-5 space-y-4 shadow-sm sticky top-4 font-mono select-none">
@@ -29,20 +30,50 @@ export default function PurchaseFinancialSummary({
           </span>
         </div>
 
-        <div className="flex justify-between items-center text-gray-600">
-          <span>Shipping / Logistics:</span>
-          <span className="font-bold text-xl text-amber-600">
-            (+){" "}
-            {Number(
-              (financialSummary.grandTotal - financialSummary.subTotal).toFixed(
-                2,
-              ),
-            ).toLocaleString("en-IN")}{" "}
-            ৳
-          </span>
+        {/* 🚚 Shipping / Logistics Cost Input Field Section */}
+        <div className="space-y-1 border-t border-gray-100 pt-2">
+          <label className="text-xs font-bold text-gray-700 font-sans flex justify-between items-center">
+            <span>Shipping / Logistics:</span>
+          </label>
+          <div className="relative rounded-md shadow-sm">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <span className="text-gray-500 text-xs font-sans">BDT</span>
+            </div>
+            <input
+              type="number"
+              step="any"
+              id="shippingCost"
+              placeholder="0.00"
+              {...register("shippingCost")}
+              onWheel={(e) => e.target.blur()}
+              className="w-full text-right font-bold text-gray-900 h-9 pr-3 pl-10 text-sm rounded-lg border border-gray-300 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
+            />
+          </div>
         </div>
 
-        <div className="flex justify-between items-center border-t border-dashed border-gray-300 pt-2 text-gray-900">
+        {/* 🏦 Bank Charge Input Field Section (NEW) */}
+        <div className="space-y-1 border-t border-gray-100 pt-2">
+          <label className="text-xs font-bold text-gray-700 font-sans flex justify-between items-center">
+            <span>Bank / Gateway Charge:</span>
+          </label>
+          <div className="relative rounded-md shadow-sm">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <span className="text-gray-500 text-xs font-sans">BDT</span>
+            </div>
+            <input
+              type="number"
+              step="any"
+              id="bankCharge"
+              placeholder="0.00"
+              {...register("bankCharge")}
+              onWheel={(e) => e.target.blur()}
+              className="w-full text-right font-bold text-gray-900 h-9 pr-3 pl-10 text-sm rounded-lg border border-gray-300 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
+            />
+          </div>
+        </div>
+
+        {/* 💎 Grand Total Display */}
+        <div className="flex justify-between items-center border-t border-dashed border-gray-300 pt-3 text-gray-900">
           <span className="font-bold text-xs uppercase font-sans">
             Grand Total Cost:
           </span>
@@ -54,7 +85,7 @@ export default function PurchaseFinancialSummary({
           </span>
         </div>
 
-        <div className="flex justify-between items-center text-gray-600 border-t border-gray-100 pt-2">
+        <div className="flex justify-between items-center border-t border-gray-100 pt-2 text-gray-600">
           <span>Ledger Paid Amount:</span>
           <span className="font-bold text-xl text-blue-600">
             {Number(paymentHook.paidAmount.toFixed(2)).toLocaleString("en-IN")}{" "}

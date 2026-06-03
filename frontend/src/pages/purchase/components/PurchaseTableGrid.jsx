@@ -17,23 +17,12 @@ export default function PurchaseTableGrid({
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-blue-50/40 p-4 rounded-xl border border-blue-100 items-end">
-        <div className="md:col-span-3">
+        <div className="md:col-span-4">
           <ProductSelect
             value={null}
             onChange={handleProductSelect}
             label="Search Master Catalog Stock Matrix Variant to Append Dynamic Row"
             placeholder="Type Brand Code, Category Specification, Model Target Name or Private SKU Key..."
-          />
-        </div>
-        <div>
-          <Input
-            label="Shipping Cost (BDT)"
-            type="number"
-            step="0.01"
-            placeholder="0.00"
-            prefix={<Truck className="size-4 text-blue-600" />}
-            onWheel={(e) => e.target.blur()}
-            {...register("shippingCost")} // Directly linked via pure string processing engine blocks to neutralize raw native NaN conversions
           />
         </div>
       </div>
