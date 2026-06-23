@@ -120,7 +120,7 @@ export const login = async ({ identifier, password }, req) => {
 };
 
 /* ================= REFRESH ================= */
-// auth.service.js
+
 export const refreshToken = async (token) => {
   if (!token) throw new AppError("Unauthorized", 401);
 

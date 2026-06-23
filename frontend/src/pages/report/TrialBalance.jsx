@@ -16,18 +16,15 @@ const formatToApiDate = (dateString) => {
   return `${day}-${month}-${year}`;
 };
 
-// গ্লোবাল ফাইন্যান্সিয়াল প্রেজেন্টেশন রুল: ক্রেডিট পজিশন বা নেগেটিভ ভ্যালু ব্র্যাকেটের (amount) ভেতর দেখানোর মেথড
 const formatSingleLineBalance = (row) => {
   const isDebitSide = row.closingDebit > 0;
   const isCreditSide = row.closingCredit > 0;
   
   if (!isDebitSide && !isCreditSide) return "0";
   
-  // ব্যাকএন্ড ডাইনামিক রাউন্ডেড ভ্যালু রিড করা হচ্ছে
   const amount = isDebitSide ? row.closingDebitRounded : row.closingCreditRounded;
   const formattedNumber = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(amount);
   
-  // যদি ক্রেডিট অ্যাকাউন্ট হয় (যেমন: Accounts Payable, Sales), তবে ব্র্যাকেটের ভেতর দেখাবে (10,000)
   if (isCreditSide) {
     return `(${formattedNumber})`;
   }
@@ -35,7 +32,6 @@ const formatSingleLineBalance = (row) => {
   return formattedNumber;
 };
 
-// গ্র্যান্ড টোটাল কার্ডের জন্য স্ট্যান্ডার্ড কারেন্সি ফরম্যাটার (দশমিক মুক্ত রাউন্ড ভ্যালু)
 const formatSummaryCardCurrency = (amount) => {
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
@@ -75,7 +71,6 @@ const TrialBalance = () => {
 
       const res = await axiosSecure.get("/reports/trial-balance/", { params });
 
-      // ব্যাকএন্ডের নতুন মেটা-সামারি স্কিমা অবজেক্ট বাইন্ডিং
       if (res?.data?.data) {
         setTbData(res.data.data);
       } else {
@@ -102,7 +97,6 @@ const TrialBalance = () => {
       INCOME: "bg-green-50 text-green-700 border-green-200",
       EXPENSE: "bg-amber-50 text-amber-700 border-amber-200",
     };
-    // আপারকেস সেফটি ম্যাচিং
     return colors[type?.toUpperCase()] || "bg-gray-50 text-gray-700 border-gray-200";
   };
 
@@ -113,7 +107,6 @@ const TrialBalance = () => {
         animate={{ opacity: 1, y: 0 }}
         className="space-y-6"
       >
-        {/* HEADER SECTION */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-2 select-none">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Trial Balance Engine</h1>
@@ -143,7 +136,6 @@ const TrialBalance = () => {
           )}
         </div>
 
-        {/* CONTROL CONFIGURATION PANEL */}
         <Card className="print:hidden border border-gray-200 shadow-xs bg-gray-50/50">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4">
             <div className="w-full flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -244,14 +236,12 @@ const TrialBalance = () => {
           </div>
         </Card>
 
-        {/* EXECUTIVE REPORT MATRIX DISPLAY */}
         {tbData && (
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
-            {/* RAW OVERVIEW METRIC CARD WALL */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 print:hidden select-none">
               <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-xs">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Aggregate Dr Position</p>
@@ -275,9 +265,7 @@ const TrialBalance = () => {
               </div>
             </div>
 
-            {/* MASTER STATEMENT TABLE ARCHITECTURE */}
             <Card className="border border-gray-200 overflow-hidden shadow-xs">
-              {/* STYLISH PRINT HEAD SHEET HEADER */}
               <div className="bg-white px-6 py-5 border-b border-gray-200 select-none">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div>
@@ -296,7 +284,6 @@ const TrialBalance = () => {
                 </div>
               </div>
 
-              {/* HIGH PERFORMANCE DATA MATRIX GRID */}
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -312,29 +299,24 @@ const TrialBalance = () => {
                   <tbody className="divide-y divide-gray-100 text-sm font-mono">
                     {tbData.rows?.map((row, idx) => (
                       <tr key={idx} className="hover:bg-gray-50/50 transition-colors duration-75 align-middle">
-                        {/* Column 1: Code */}
                         <td className="p-4 font-semibold text-gray-500 tracking-tight">{row.code}</td>
                         
-                        {/* Column 2: Name */}
                         <td className="p-4">
                           <div className="font-bold text-gray-900 tracking-tight">{row.name}</div>
                         </td>
                         
-                        {/* Column 3: Type */}
                         <td className="p-4">
                           <span className={`inline-flex items-center px-2 py-0.5 rounded border text-[10px] font-bold uppercase select-none ${getAccountTypeColor(row.type)}`}>
                             {row.type}
                           </span>
                         </td>
                         
-                        {/* Optional Comparison Field Column */}
                         {tbData.comparisonTBDate && (
                           <td className="p-4 text-right text-gray-600 font-bold">
                             {row.previousBalance ? new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Math.round(row.previousBalance)) : "-"}
                           </td>
                         )}
                         
-                        {/* Column 4: SINGLE LINE CLEAN ROUNDED SYSTEM BALANCE DISPLAY */}
                         <td className={`p-4 text-right font-black text-md ${row.closingCredit > 0 ? 'text-rose-600' : 'text-blue-700'}`}>
                           {formatSingleLineBalance(row)}
                         </td>
@@ -342,14 +324,12 @@ const TrialBalance = () => {
                     ))}
                   </tbody>
                   
-                  {/* ZERO FRACTION PERFECT INTEGER BALANCING TOTAL FOOTER */}
                   <tfoot className="bg-gray-900 border-t border-gray-800 text-white font-mono font-black select-none">
                     <tr>
                       <td colSpan={tbData.comparisonTBDate ? 4 : 3} className="p-4 text-right text-xs uppercase tracking-wider text-gray-400">
                         Balanced Core Ledger Matrix Sum Totals:
                       </td>
                       <td className="p-4 text-right text-md font-extrabold tracking-tight text-emerald-400">
-                        {/* Credits display inside brackets inside database summary loops but grand total reflects real DR block balance string layout */}
                         {tbData.metaSummary?.totalDebitFormatted}
                       </td>
                     </tr>
